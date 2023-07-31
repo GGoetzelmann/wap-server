@@ -1,14 +1,16 @@
 package edu.kit.scc.dem.wapsrv.model.rdf;
 
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.Literal;
-import org.apache.commons.rdf.simple.Types;
+
 import edu.kit.scc.dem.wapsrv.app.WapServerConfig;
 import edu.kit.scc.dem.wapsrv.model.Container;
 import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.AsVocab;
 import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.LdpVocab;
 import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.RdfVocab;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 
 /**
  * The class is used to generate the correct output representation of the Container. It extends the Container class and
@@ -34,8 +36,8 @@ public class RdfOutputContainer extends RdfContainer {
     * @param rdfBackend
     *                               the RDF backend to be used
     */
-   public RdfOutputContainer(Dataset dataset, boolean preferMinimalContainer, boolean preferIrisOnly,
-         RdfBackend rdfBackend) {
+   public RdfOutputContainer(Model dataset, boolean preferMinimalContainer, boolean preferIrisOnly,
+                             RdfBackend rdfBackend) {
       super(dataset, preferMinimalContainer, preferIrisOnly, rdfBackend);
       if (preferIrisOnly) {
          setIri(getIriString() + "?iris=1", false);
@@ -49,35 +51,36 @@ public class RdfOutputContainer extends RdfContainer {
     * @see edu.kit.scc.dem.wapsrv.model.rdf.RdfWapObject#getDataset()
     */
    @Override
-   public Dataset getDataset() {
+   public Model getDataset() {
       // Because the sequence head is also included we need to substract 1
-      long annoCount = dataset.getGraph().stream(Container.toAnnotationSeqIri(iri), null, null).count() - 1;
+      IRI schnitzelIRI = getIri();
+      long annoCount = dataset.filter(Container.toAnnotationSeqIri(getIri()), null, null).stream().count() - 1;
       Literal annoCountLiteral
-            = rdfBackend.getRdf().createLiteral(String.valueOf(annoCount), Types.XSD_NONNEGATIVEINTEGER);
-      dataset.getGraph().add(iri, AsVocab.totalItems, annoCountLiteral);
+            = SimpleValueFactory.getInstance().createLiteral(String.valueOf(annoCount), XSD.NON_NEGATIVE_INTEGER);
+      dataset.add(getIri(), AsVocab.totalItems, annoCountLiteral);
       // Don't show first and last if there are no Annotation, hence no page.
       if (annoCount != 0) {
          int pageCount
                = (int) (Math.floor((annoCount - 1.0f) / (WapServerConfig.getInstance().getPageSize() + 0.0f)) + 1);
-         IRI firstIri = rdfBackend.getRdf().createIRI(getIriString() + "&page=0");
+         IRI firstIri = SimpleValueFactory.getInstance().createIRI(getIriString() + "&page=0");
          int lastPage = pageCount == 0 ? 0 : pageCount - 1;
-         IRI lastIri = rdfBackend.getRdf().createIRI(getIriString() + "&page=" + lastPage);
-         dataset.getGraph().add(iri, AsVocab.first, firstIri);
-         dataset.getGraph().add(iri, AsVocab.last, lastIri);
+         IRI lastIri = SimpleValueFactory.getInstance().createIRI(getIriString() + "&page=" + lastPage);
+         dataset.add(getIri(), AsVocab.first, firstIri);
+         dataset.add(getIri(), AsVocab.last, lastIri);
       }
       // Do not add contains in minimalContainer
       if (!preferMinimalContainer) {
          // Add subcontainer in contains according to the sequence
-         dataset.getGraph().stream(Container.toContainerSeqIri(iri), null, null).forEach(t -> {
+         dataset.filter(Container.toContainerSeqIri(getIri()), null, null).forEach(t -> {
             if (!t.getObject().equals(RdfVocab.seq)) {
-               dataset.getGraph().add(iri, LdpVocab.contains, t.getObject());
+               dataset.add(getIri(), LdpVocab.contains, t.getObject());
             }
          });
       }
       // Delete sequence for container
-      dataset.getGraph().remove(Container.toContainerSeqIri(iri), null, null);
+      dataset.remove(Container.toContainerSeqIri(getIri()), null, null);
       // Delete sequence for annotations
-      dataset.getGraph().remove(Container.toAnnotationSeqIri(iri), null, null);
+      dataset.remove(Container.toAnnotationSeqIri(getIri()), null, null);
       return super.getDataset();
    }
 }

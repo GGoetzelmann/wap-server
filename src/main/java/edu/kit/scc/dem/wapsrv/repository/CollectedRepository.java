@@ -11,4 +11,5 @@ package edu.kit.scc.dem.wapsrv.repository;
  * @version 1.1
  */
 public abstract class CollectedRepository implements AnnotationRepository, ContainerRepository, BackupRepository {
+
 }

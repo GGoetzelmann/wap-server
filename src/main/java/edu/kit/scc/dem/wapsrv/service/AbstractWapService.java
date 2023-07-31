@@ -3,15 +3,14 @@ package edu.kit.scc.dem.wapsrv.service;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.Graph;
-import org.apache.commons.rdf.api.Literal;
-import org.apache.commons.rdf.simple.Types;
+import java.util.*;
+
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.impl.BooleanLiteral;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -281,11 +280,10 @@ public abstract class AbstractWapService implements WapService {
     */
    public void checkEtag(String iri, String etag) {
       log.info("checking etag match for: '" + iri + "' with given etag: '" + etag + "'");
-      BlankNodeOrIRI node = repository.getRdf().createIRI(iri);
-      Literal etagLiteral = repository.getRdf().createLiteral(etag);
+      IRI node = SimpleValueFactory.getInstance().createIRI(iri);
+      Literal etagLiteral = SimpleValueFactory.getInstance().createLiteral(etag);
       repository.readRdfTransaction(ds -> {
-         Graph graph = ds.getGraph(node).get();
-         if (!graph.stream(node, WapVocab.etag, etagLiteral).findFirst().isPresent()) {
+         if (!ds.filter(node, WapVocab.etag, etagLiteral).stream().findFirst().isPresent()) {
             log.warn("checking etag match for: '" + iri + "' failed.");
             throw new EtagDoesntMatchException("The etag given does not match the etag in the database");
          }
@@ -304,13 +302,13 @@ public abstract class AbstractWapService implements WapService {
     */
    public void deleteObject(String iri, String parentSeqIri) {
       log.info("deleting object '" + iri + "'");
-      BlankNodeOrIRI node = repository.getRdf().createIRI(iri);
-      Literal trueLiteral = repository.getRdf().createLiteral("true", Types.XSD_BOOLEAN);
+      IRI node = SimpleValueFactory.getInstance().createIRI(iri);
+      Literal trueLiteral = SimpleValueFactory.getInstance().createLiteral(Boolean.TRUE);
       String parentContainerIriString = WapObject.getParentContainerIriString(iri);
-      BlankNodeOrIRI parentNode = repository.getRdf().createIRI(parentContainerIriString);
+      IRI parentNode = SimpleValueFactory.getInstance().createIRI(parentContainerIriString);
       repository.writeRdfTransaction(ds -> {
-         Graph graph = ds.getGraph(node).get();
-         graph.add(node, WapVocab.deleted, trueLiteral);
+         ds.add(node, WapVocab.deleted, trueLiteral);
+         repository.addTriple(node.stringValue(), SimpleValueFactory.getInstance().createStatement(node, WapVocab.deleted, trueLiteral));
          repository.removeElementFromRdfSeq(parentContainerIriString, parentSeqIri, iri);
          updateEtag(parentNode, etagFactory.generateEtag());
       });
@@ -326,12 +324,13 @@ public abstract class AbstractWapService implements WapService {
     */
    public void deleteObjectBulk(List<String> iriList) {
       log.info("bulk deleting of objects.");
-      Literal trueLiteral = repository.getRdf().createLiteral("true", Types.XSD_BOOLEAN);
+      Literal trueLiteral = SimpleValueFactory.getInstance().createLiteral(Boolean.TRUE);
       for (String iri : iriList) {
-         BlankNodeOrIRI node = repository.getRdf().createIRI(iri);
+         IRI node = SimpleValueFactory.getInstance().createIRI(iri);
          repository.writeRdfTransaction(ds -> {
             log.info("bulk deleting annotation: '" + iri + "'");
-            ds.add(node, node, WapVocab.deleted, trueLiteral);
+            ds.add(node, WapVocab.deleted, trueLiteral);
+            repository.addTriple(iri, SimpleValueFactory.getInstance().createStatement(node, WapVocab.deleted, trueLiteral));
          });
       }
       log.info("bulk deleting of objects done.");
@@ -346,19 +345,40 @@ public abstract class AbstractWapService implements WapService {
     * @param generateEtag
     *                     the new etag for the WapObject
     */
-   public void updateEtag(BlankNodeOrIRI node, String generateEtag) {
-      log.info("updating etag for: '" + node.ntriplesString() + "' with given etag: '" + generateEtag + "'");
-      Literal etagLiteral = repository.getRdf().createLiteral(generateEtag);
-      Literal modifiedLiteral = RdfUtilities.rdfLiteralFromCalendar(Calendar.getInstance(), repository.getRdf());
+   public void updateEtag(IRI node, String generateEtag) {
+      log.info("updating etag for: '" + node.stringValue() + "' with given etag: '" + generateEtag + "'");
+      Literal etagLiteral = SimpleValueFactory.getInstance().createLiteral(generateEtag);
+      Literal modifiedLiteral = RdfUtilities.rdfLiteralFromCalendar(Calendar.getInstance());
       repository.writeRdfTransaction(ds -> {
-         Graph graph = ds.getGraph(node).get();
-         graph.remove(node, WapVocab.etag, null);
-         graph.add(node, WapVocab.etag, etagLiteral);
-         // Update the Modified
-         graph.remove(node, DcTermsVocab.modified, null);
-         graph.add(node, DcTermsVocab.modified, modifiedLiteral);
+
+         Statement etagTriple = ds.filter(node, WapVocab.etag, null).stream().findFirst().orElse(null);
+         //all operations should be doable even if initial triple is null
+         Statement newEtagTriple = SimpleValueFactory.getInstance().createStatement(node, WapVocab.etag, etagLiteral);
+
+         ds.remove(node, WapVocab.etag, null);
+         ds.add(node, WapVocab.etag, etagLiteral);
+         //write update to db
+
+         if (etagTriple != null) {
+            repository.updateTriple(node.stringValue(), etagTriple, newEtagTriple);
+         } else {
+            repository.updateTriple(node.stringValue(), newEtagTriple, newEtagTriple);
+         }
+
+         Statement modTriple = ds.filter(node, DcTermsVocab.modified, null).stream().findFirst().orElse(null);
+         ds.remove(node, DcTermsVocab.modified, null);
+         ds.add(node, DcTermsVocab.modified, modifiedLiteral);
+         //Write update to db
+         Statement newModTriple = SimpleValueFactory.getInstance().createStatement(node, DcTermsVocab.modified, modifiedLiteral);
+         if (etagTriple != null) {
+            repository.updateTriple(node.stringValue(), modTriple, newModTriple);
+         } else {
+            repository.updateTriple(node.stringValue(), newModTriple, newModTriple);
+         }
+
+
       });
-      log.info("updated etag for: '" + node.ntriplesString() + "'");
+      log.info("updated etag for: '" + node.stringValue() + "'");
    }
 
    /**
@@ -371,7 +391,7 @@ public abstract class AbstractWapService implements WapService {
     *                     the new etag for the WapObject
     */
    public void updateEtag(String iri, String generateEtag) {
-      BlankNodeOrIRI node = repository.getRdf().createIRI(iri);
+      IRI node = SimpleValueFactory.getInstance().createIRI(iri);
       updateEtag(node, generateEtag);
    }
 
@@ -429,10 +449,9 @@ public abstract class AbstractWapService implements WapService {
    public boolean containsIri(String iri) {
       log.info("checking if exists: '" + iri + "'");
       Boolean[] result = new Boolean[1];
-      BlankNodeOrIRI node = repository.getRdf().createIRI(iri);
+      IRI node = SimpleValueFactory.getInstance().createIRI(iri);
       repository.readRdfTransaction(ds -> {
-         Graph graph = ds.getGraph(node).get();
-         result[0] = graph.contains(node, null, null);
+         result[0] = ds.contains(node, null, null);
       });
       log.info("check exists result for: '" + iri + "' is: '" + result[0] + "'");
       return result[0];
@@ -448,10 +467,9 @@ public abstract class AbstractWapService implements WapService {
    public boolean isIriDeleted(String iri) {
       log.info("checking if deleted: '" + iri + "'");
       Boolean[] result = new Boolean[1];
-      BlankNodeOrIRI node = repository.getRdf().createIRI(iri);
+      IRI node = SimpleValueFactory.getInstance().createIRI(iri);
       repository.readRdfTransaction(ds -> {
-         Graph graph = ds.getGraph(node).get();
-         result[0] = graph.contains(node, WapVocab.deleted, null);
+         result[0] = ds.contains(node, WapVocab.deleted, null);
       });
       log.info("check deleted result for: '" + iri + "' is: '" + result[0] + "'");
       return result[0];
@@ -469,7 +487,7 @@ public abstract class AbstractWapService implements WapService {
    @Override
    public Annotation getAnnotation(String iri) throws WapException {
       log.info("Get Annotation from DB: '" + iri + "'");
-      Dataset[] retDs = new Dataset[1];
+      Model[] retDs = new Model[1];
       repository.readRdfTransaction(ds -> {
          checkExistsAndNotDeleted(iri);
          retDs[0] = repository.getWapObject(iri);

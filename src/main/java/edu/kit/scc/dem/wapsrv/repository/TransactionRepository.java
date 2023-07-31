@@ -1,8 +1,12 @@
 package edu.kit.scc.dem.wapsrv.repository;
 
-import org.apache.commons.rdf.api.Dataset;
 import edu.kit.scc.dem.wapsrv.exceptions.WapException;
 import edu.kit.scc.dem.wapsrv.model.rdf.RdfTransactionExecuter;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
+
+import java.util.Optional;
 
 /**
  * Interface to interact with the repository
@@ -32,7 +36,7 @@ public interface TransactionRepository{
    *
    * @return The transaction dataset
    */
-  Dataset getTransactionDataset();
+  Model getTransactionDataset();
 
   /**
    * Perform a read only transaction on the Dataset of the database. The

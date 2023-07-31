@@ -25,9 +25,9 @@ repositories {
 }
 
 
-//configurations {
- //   all*.exclude module : 'spring-boot-starter-logging'
-//}
+configurations {
+   all*.exclude module : 'spring-boot-starter-logging'
+}
 
 ext {
     set('javersVersion', "6.8.0")
@@ -76,35 +76,35 @@ dependencies {
     //implementation 'de.codecentric:spring-boot-admin-starter-client:2.7.10'
 
     // springdoc
-    implementation "org.springdoc:springdoc-openapi-ui:${springDocVersion}"
-    implementation "org.springdoc:springdoc-openapi-data-rest:${springDocVersion}"
-    implementation "org.springdoc:springdoc-openapi-webmvc-core:${springDocVersion}"
+    implementation "org.springdoc:springdoc-openapi-ui:1.6.15"
+    implementation "org.springdoc:springdoc-openapi-data-rest:1.6.15"
+    implementation "org.springdoc:springdoc-openapi-webmvc-core:1.6.15"
 
     //Keycloak
     // implementation "org.keycloak:keycloak-spring-boot-starter:${keycloakVersion}"
-    implementation "com.nimbusds:nimbus-jose-jwt:9.24.3"
+    implementation 'com.nimbusds:nimbus-jose-jwt:9.30.2'
     implementation "io.jsonwebtoken:jjwt-api:0.11.5"
     implementation "io.jsonwebtoken:jjwt-impl:0.11.5"
     implementation "io.jsonwebtoken:jjwt-jackson:0.11.5"
     
     //Jena
-    implementation "org.apache.jena:apache-jena-libs:3.7.0"
-    implementation "org.apache.jena:jena-fuseki:3.7.0"
-    implementation "org.apache.jena:jena-fuseki-embedded:3.7.0"
-    implementation 'org.apache.jena:jena-osgi:3.7.0'
+    implementation 'org.apache.jena:apache-jena-libs:4.9.0'
+    implementation 'org.apache.jena:jena-fuseki:4.9.0'
+    implementation 'org.apache.jena:jena-fuseki-server:4.9.0'
+    //Testing replacement
+    //implementation 'org.springframework.boot:spring-boot-starter-jetty:3.1.1'
+    //implementation 'org.springframework.boot:spring-boot-starter-web:3.1.1'
 
-    implementation "org.apache.commons:commons-rdf-api:0.5.0"
-    implementation "org.apache.thrift:libthrift:0.12.0"
-    implementation("org.apache.commons:commons-rdf-jena:0.5.0"){
-        exclude group: 'org.apache.jena', module: 'jena-osgi'
-    }        
-    implementation "org.apache.commons:commons-rdf-jsonld-java:0.5.0"
-    implementation "com.github.java-json-tools:json-schema-validator:2.2.8"
+    //implementation 'org.apache.jena:jena-osgi:4.1.0'
 
-    implementation "org.apache.commons:commons-collections4:4.1"
+    implementation 'org.eclipse.rdf4j:rdf4j-client:4.3.3'
+    implementation 'org.apache.thrift:libthrift:0.18.1'
+
+    implementation 'com.github.java-json-tools:json-schema-validator:2.2.14'
+    implementation 'org.json:json:20230618'
    
      // driver for postgres
-    implementation "org.postgresql:postgresql:42.5.0"
+    implementation 'org.postgresql:postgresql:42.5.4'
     //driver for h2
     implementation "com.h2database:h2:2.1.214"
 
@@ -113,22 +113,22 @@ dependencies {
     testImplementation "org.springframework:spring-test"
    // testImplementation "org.springframework.security:spring-security-test"
    
-    testImplementation "org.junit.platform:junit-platform-launcher:${junitPlatformVersion}"
-    testImplementation "org.junit.platform:junit-platform-engine:${junitPlatformVersion}"
-    testImplementation "org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}"
-    testImplementation "org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}"
+    testImplementation "org.junit.platform:junit-platform-launcher:1.9.2"
+    testImplementation "org.junit.platform:junit-platform-engine:1.9.2"
+    testImplementation "org.junit.jupiter:junit-jupiter-api:5.9.2"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:5.9.2"
     testImplementation "io.rest-assured:rest-assured"
     testImplementation "io.rest-assured:spring-mock-mvc"
     testImplementation "io.rest-assured:rest-assured"
 
     //Java 11 Support 
-    testImplementation "org.mockito:mockito-inline:4.10.0"
+    testImplementation 'org.mockito:mockito-inline:5.2.0'
     //testImplementation "org.mockito:mockito-core:2.23.4"
-    testImplementation "com.sun.xml.bind:jaxb-core:2.3.0.1"
-    testImplementation "com.sun.xml.bind:jaxb-impl:2.3.0.1"
+    testImplementation 'com.sun.xml.bind:jaxb-core:4.0.2'
+    testImplementation 'com.sun.xml.bind:jaxb-impl:4.0.2'
     testImplementation "javax.activation:activation:1.1.1"
-    testImplementation "org.javassist:javassist:3.23.1-GA"
-    testImplementation "javax.xml.bind:jaxb-api:2.3.1"
+    testImplementation 'org.javassist:javassist:3.29.2-GA'
+    testImplementation 'javax.xml.bind:jaxb-api:2.4.0-b180830.0359'
 }
 
 if (project.hasProperty('release')) {

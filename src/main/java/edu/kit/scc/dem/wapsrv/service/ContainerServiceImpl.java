@@ -4,10 +4,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.Graph;
-import org.apache.commons.rdf.api.Literal;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,16 +92,16 @@ public class ContainerServiceImpl extends AbstractWapService implements Containe
     final boolean preferMinimalContainer = ContainerPreference.isPreferMinimalContainer(preferences);
     final boolean preferIrisOnly = ContainerPreference.isPreferContainedIRIs(preferences);
     checkExistsAndNotDeleted(containerIri);
-    Dataset[] retDs = new Dataset[1];
+    Model[] retDs = new Model[1];
     repository.readRdfTransaction(ds -> {
-      Dataset containerDataset = repository.getWapObject(containerIri);
+      Model containerDataset = repository.getWapObject(containerIri);
       if(!preferMinimalContainer){
         // Need a page from database depending on preferIrisOnly
         try{
           Page page = getPage(containerIri, 0, preferIrisOnly, true);
           // Add the page to the container data set
-          page.getDataset().getGraph().iterate().forEach(t -> {
-            containerDataset.getGraph().add(t);
+          page.getDataset().forEach(t -> {
+            containerDataset.add(t);
           });
         } catch(NotExistentException e){
           log.warn("the requested page does not exist: '" + containerIri + "' page 0");
@@ -161,8 +162,9 @@ public class ContainerServiceImpl extends AbstractWapService implements Containe
           // Slug was given, we may overwrite deleted containers, go on
           log.info("Slug used to recreate deleted container: '" + containerIri + "'. Deleting old data.");
           repository.writeRdfTransaction(ds -> {
-            Optional<BlankNodeOrIRI> node = Optional.of(repository.getRdf().createIRI(containerIri));
-            ds.remove(node, null, null, null);
+            IRI node = SimpleValueFactory.getInstance().createIRI(containerIri);
+            ds.remove(node, null, null);
+            repository.removeAll(containerIri);
           });
         } else{
           throw new ResourceDeletedException(
@@ -214,15 +216,15 @@ public class ContainerServiceImpl extends AbstractWapService implements Containe
           throws WapException{
     log.info("Get Page of Container: '" + containerIri + "' page Nr: '" + pageNr + "'");
     int pageSize = wapServerConfig.getPageSize();
-    Dataset retDs = repository.getRdf().createDataset();
-    BlankNodeOrIRI containerNode = repository.getRdf().createIRI(containerIri);
+    Model retDs = new LinkedHashModel();
+    IRI containerNode = SimpleValueFactory.getInstance().createIRI(containerIri);
     Page[] page = new Page[1];
     // No exception ==> page exists
     repository.readRdfTransaction(ds -> {
       // Check if container exists and has not been deleted
       checkExistsAndNotDeleted(containerIri);
       // Get total count of annotations
-      Graph graph = ds.getGraph(containerNode).get();
+      Model graph = ds.filter(containerNode, null, null);
       int annoTotalCount = repository.countElementsInSeq(containerIri, Container.toAnnotationSeqIriString(containerIri));
 
       //just moved up
@@ -235,9 +237,9 @@ public class ContainerServiceImpl extends AbstractWapService implements Containe
       }
       //end of modification
 
-      Literal objectOfModified = (Literal) graph.stream(containerNode, DcTermsVocab.modified, null).findFirst().get().getObject();
-      String modifiedString = objectOfModified.getLexicalForm();
-      String labelString = RdfUtilities.nStringToString(graph.stream(containerNode, RdfSchemaVocab.label, null).findFirst().get().getObject().ntriplesString());
+      Literal objectOfModified = (Literal) graph.filter(containerNode, DcTermsVocab.modified, null).stream().findFirst().get().getObject();
+      String modifiedString = objectOfModified.stringValue();
+      String labelString = RdfUtilities.nStringToString(ds.filter(containerNode, RdfSchemaVocab.label, null).stream().findFirst().get().getObject().stringValue());
       page[0] = modelFactory.createPage(retDs, containerIri, pageNr, preferIrisOnly, isEmbedded, annoTotalCount, modifiedString, labelString);
       // Read the annotation list with the correct size
       // ATTENTION: the index of the sequence does not start with 0 as usual

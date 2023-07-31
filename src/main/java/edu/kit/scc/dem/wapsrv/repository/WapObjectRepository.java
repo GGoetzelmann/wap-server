@@ -1,8 +1,7 @@
 package edu.kit.scc.dem.wapsrv.repository;
 
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.RDF;
 import edu.kit.scc.dem.wapsrv.model.WapObject;
+import org.eclipse.rdf4j.model.Model;
 
 /**
  * Provides the functions for all the necessary operations in the database that could not have been handled in RDF. The
@@ -53,13 +52,6 @@ public interface WapObjectRepository extends TransactionRepository {
    int countElementsInSeq(String modelIri, String seqIri);
 
    /**
-    * Gets the RDF implementation used.
-    *
-    * @return the RDF implementation
-    */
-   RDF getRdf();
-
-   /**
     * Write the RDF data of a WapObject to database.
     *
     * @param wapObject
@@ -74,5 +66,13 @@ public interface WapObjectRepository extends TransactionRepository {
     *             the IRI of the WapObject to read
     * @return     the WapObject
     */
-   Dataset getWapObject(String iri);
+   Model getWapObject(String iri);
+
+   void updateTriple(String modelIri, org.eclipse.rdf4j.model.Statement oldStatement, org.eclipse.rdf4j.model.Statement newStatement);
+
+   void addTriple(String modelIri, org.eclipse.rdf4j.model.Statement statement);
+
+   void removeTriple(String modelIri, org.eclipse.rdf4j.model.Statement statement);
+
+   void removeAll(String iri);
 }

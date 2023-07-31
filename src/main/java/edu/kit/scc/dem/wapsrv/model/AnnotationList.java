@@ -1,9 +1,10 @@
 package edu.kit.scc.dem.wapsrv.model;
 
 import java.util.List;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.IRI;
+
 import edu.kit.scc.dem.wapsrv.model.rdf.RdfUtilities;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Resource;
 
 /**
  * AnnotationList is a simple list of annotations without the additional metadata of pages.
@@ -88,7 +89,7 @@ public interface AnnotationList extends FormattableObject, Iterable<Annotation> 
     * 
     * @return The IRI of the annotation list
     */
-   default BlankNodeOrIRI getIri() {
+   default IRI getIri() {
       if (getAnnotations().size() == 1) {
          return getAnnotations().get(0).getIri();
       } else {
@@ -103,7 +104,7 @@ public interface AnnotationList extends FormattableObject, Iterable<Annotation> 
     * @return The IRI
     */
    default String getIriString() {
-      return RdfUtilities.nStringToString(getIri().ntriplesString());
+      return RdfUtilities.nStringToString(getIri().stringValue());
    }
 
    /**

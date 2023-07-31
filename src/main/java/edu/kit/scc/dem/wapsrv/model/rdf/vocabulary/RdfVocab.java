@@ -1,8 +1,7 @@
 package edu.kit.scc.dem.wapsrv.model.rdf.vocabulary;
 
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.simple.SimpleRDF;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 /**
  * This class provides the vocabulary for RDF syntax (http://www.w3.org/1999/02/22-rdf-syntax-ns#).
@@ -87,13 +86,10 @@ public class RdfVocab {
     * xmlLiteral
     */
    public static IRI xmlLiteral = buildIri("XMLLiteral");
-   private static RDF rdf;
+
    private static final String ROOT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 
    private static IRI buildIri(String property) {
-      if (rdf == null) {
-         rdf = new SimpleRDF();
-      }
-      return rdf.createIRI(ROOT + property);
+      return SimpleValueFactory.getInstance().createIRI(ROOT + property);
    }
 }

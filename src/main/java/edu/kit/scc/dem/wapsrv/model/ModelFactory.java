@@ -1,9 +1,9 @@
 package edu.kit.scc.dem.wapsrv.model;
 
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.RDF;
+
 import edu.kit.scc.dem.wapsrv.exceptions.WapException;
 import edu.kit.scc.dem.wapsrv.model.formats.Format;
+import org.eclipse.rdf4j.model.Model;
 
 /**
  * Interface used for creation of internal data models. Also some basic operations are implemented here.
@@ -34,13 +34,6 @@ public interface ModelFactory {
    }
 
    /**
-    * Returns the underlying RDF Object
-    * 
-    * @return The RDF
-    */
-   RDF getRDF();
-
-   /**
     * Creation an annotation from the given formatted string. The annotation will use the IRI that is implicit in the
     * string.
     * 
@@ -61,7 +54,7 @@ public interface ModelFactory {
     *                 The data set
     * @return         The annotation
     */
-   Annotation createAnnotation(Dataset dataset);
+   Annotation createAnnotation(Model dataset);
 
    /**
     * Create an annotation list from the given parameters. All existent annotations in the serialized string will be
@@ -104,7 +97,7 @@ public interface ModelFactory {
     *                                true, if only the IRIS without the body should be returned.
     * @return                        The container created
     */
-   Container createContainer(Dataset dataset, boolean preferMinimalContainer, boolean preferIrisOnly);
+   Container createContainer(Model dataset, boolean preferMinimalContainer, boolean preferIrisOnly);
 
    /**
     * Creates a container with the given dataset as backend
@@ -113,7 +106,7 @@ public interface ModelFactory {
     *                 The dataset
     * @return         The container
     */
-   Container createContainer(Dataset dataset);
+   Container createContainer(Model dataset);
 
    /**
     * Creates a page with the given data set as backend
@@ -136,7 +129,7 @@ public interface ModelFactory {
     *                        true, if the page is created for embedding it into a container.
     * @return                The page
     */
-   Page createPage(Dataset dataset, String containerIri, int pageNr, boolean preferIrisOnly, boolean isEmbedded,
+   Page createPage(Model dataset, String containerIri, int pageNr, boolean preferIrisOnly, boolean isEmbedded,
          int annoTotalCount, String modified, String label);
 
    /**

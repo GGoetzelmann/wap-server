@@ -1,22 +1,15 @@
 package edu.kit.scc.dem.wapsrv.model.rdf;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.Vector;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.Graph;
-import org.apache.commons.rdf.api.Literal;
-import org.apache.commons.rdf.api.Quad;
-import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.api.Triple;
-import org.apache.commons.rdf.simple.Types;
+import java.util.*;
+
+import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.impl.DynamicModel;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+
 import edu.kit.scc.dem.wapsrv.exceptions.InternalServerException;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 
 /**
  * Utility class with common operations on graphs and datasets
@@ -30,7 +23,7 @@ import edu.kit.scc.dem.wapsrv.exceptions.InternalServerException;
  */
 public class RdfUtilities {
    /**
-    * Renames an existing IRI to a new one
+    * Renames an existing IRI to a new one. The IRI can either be in a subject or an object position of a statement
     * 
     * @param sourceGraph
     *                    The graph to rename the IRI in
@@ -39,36 +32,78 @@ public class RdfUtilities {
     * @param newIri
     *                    The new IRI
     */
-   public static void renameNodeIri(final Graph sourceGraph, BlankNodeOrIRI oldIdIri, BlankNodeOrIRI newIri) {
+   public static void renameNodeIri(final Model sourceGraph, IRI oldIdIri, IRI newIri) {
+      SimpleValueFactory valueFactory = SimpleValueFactory.getInstance();
       // Find all the triples containing the IRI
-      Iterable<Triple> subjectIt = sourceGraph.iterate(oldIdIri, null, null);
-      Iterable<Triple> objectIt = sourceGraph.iterate(null, null, oldIdIri);
-      List<Triple> tripleDelete = new ArrayList<Triple>();
-      // First add the new subject related ones
-      for (Triple t : subjectIt) {
-         sourceGraph.add(newIri, t.getPredicate(), t.getObject());
-         tripleDelete.add(t);
+
+      Map<Statement, Statement> statementsToUpdate = new HashMap<>();
+      for (Statement statement : sourceGraph.filter(oldIdIri, null, null)) {
+         Resource subject = statement.getSubject();
+         Value objectValue = statement.getObject();
+
+         Resource newSubject = subject;
+         Value newObject = objectValue;
+         if (subject.isIRI()) {
+            newSubject = subject.equals(oldIdIri) ? newIri : subject;
+         }
+
+         if (objectValue.isIRI()) {
+            newObject = objectValue.equals(oldIdIri) ? newIri : objectValue;
+         }
+
+         if (!subject.equals(newSubject) || !objectValue.equals(newObject)) {
+            Statement updatedStatement = valueFactory.createStatement(newSubject, statement.getPredicate(), newObject);
+            statementsToUpdate.put(statement, updatedStatement);
+         }
+
+
       }
-      // First add the new object related ones
-      for (Triple t : objectIt) {
-         sourceGraph.add(t.getSubject(), t.getPredicate(), newIri);
-         tripleDelete.add(t);
+
+      for (Map.Entry<Statement, Statement> entry : statementsToUpdate.entrySet()) {
+         Statement oldStatement = entry.getKey();
+         Statement newStatement = entry.getValue();
+
+         sourceGraph.add(newStatement);
+         sourceGraph.remove(oldStatement);
       }
-      tripleDelete.iterator().forEachRemaining(sourceGraph::remove);
+
    }
 
-   /**
-    * Renames an existing IRI to a new one
-    * 
-    * @param sourceDataset
-    *                      The data set to rename the IRI in
-    * @param oldIdIri
-    *                      The old IRI
-    * @param newIri
-    *                      The new IRI
-    */
-   public static void renameNodeIri(final Dataset sourceDataset, BlankNodeOrIRI oldIdIri, BlankNodeOrIRI newIri) {
-      renameNodeIri(sourceDataset.getGraph(), oldIdIri, newIri);
+   public static void BNodesToIRI(final Model sourceGraph, BNode oldNode, IRI newIri) {
+      //TODO: Refactor duplicate code
+      SimpleValueFactory valueFactory = SimpleValueFactory.getInstance();
+      // Find all the triples containing the IRI
+
+      Map<Statement, Statement> statementsToUpdate = new HashMap<>();
+      for (Statement statement : sourceGraph.filter(oldNode, null, null)) {
+         Resource subject = statement.getSubject();
+         Value objectValue = statement.getObject();
+
+         Resource newSubject = subject;
+         Value newObject = objectValue;
+         if (subject.isBNode()) {
+            newSubject = subject.equals(oldNode) ? newIri : subject;
+         }
+
+         if (objectValue.isBNode()) {
+            newObject = objectValue.equals(oldNode) ? newIri : objectValue;
+         }
+
+         if (!subject.equals(newSubject) || !objectValue.equals(newObject)) {
+            Statement updatedStatement = valueFactory.createStatement(newSubject, statement.getPredicate(), newObject);
+            statementsToUpdate.put(statement, updatedStatement);
+         }
+
+
+      }
+
+      for (Map.Entry<Statement, Statement> entry : statementsToUpdate.entrySet()) {
+         Statement oldStatement = entry.getKey();
+         Statement newStatement = entry.getValue();
+
+         sourceGraph.add(newStatement);
+         sourceGraph.remove(oldStatement);
+      }
    }
 
    /**
@@ -80,11 +115,11 @@ public class RdfUtilities {
     *                     The RDF factory
     * @return             The cloned graph
     */
-   public static Graph clone(Graph sourceGraph, RDF factory) {
-      Graph targetGraph = factory.createGraph();
+   public static Model clone(Model sourceGraph) {
+      Model targetGraph = new LinkedHashModel();
       // Find all the triples containing the IRI
-      Iterable<Triple> it = sourceGraph.iterate();
-      it.iterator().forEachRemaining(targetGraph::add);
+      Iterator<Statement> it = sourceGraph.iterator();
+      it.forEachRemaining(targetGraph::add);
       return targetGraph;
    }
 
@@ -96,10 +131,11 @@ public class RdfUtilities {
     * @param  factory
     *                       The RDF factory
     * @return               the dataset
-    */
-   public static Dataset clone(Dataset sourceDataset, RDF factory) {
+
+   public static Model clone(Model sourceDataset) {
       throw new InternalServerException("Not yet implemented : RdfUtilities.clone()");
    }
+    */
 
    /**
     * Converts nString to string. nStrings come from the RDF Store and include enclosing characters like
@@ -129,21 +165,21 @@ public class RdfUtilities {
     *                 the IRI of the root of the subGraph to extract
     * @return         a Dataset With only the Graph of the rootIRI included.
     */
-   public static Dataset getSubDataset(Dataset dataset, RDF rdf, BlankNodeOrIRI rootIri) {
-      Dataset subset = rdf.createDataset();
-      List<BlankNodeOrIRI> termsToCheck = new Vector<BlankNodeOrIRI>();
-      Set<BlankNodeOrIRI> termsChecked = new HashSet<BlankNodeOrIRI>();
+   public static Model getSubDataset(Model dataset, Resource rootIri) {
+      Model subset = new LinkedHashModel();
+      List<Resource> termsToCheck = new Vector<Resource>();
+      Set<Resource> termsChecked = new HashSet<Resource>();
       termsToCheck.add(rootIri);
       for (int n = 0; n < termsToCheck.size(); n++) {
-         BlankNodeOrIRI iri = termsToCheck.get(n);
+         Resource iri = termsToCheck.get(n);
          termsChecked.add(iri);
-         Iterable<Quad> iterator = dataset.iterate(null, iri, null, null);
-         for (Quad quad : iterator) {
+         //Iterable<Statement> iterator = dataset.iterate(null, iri, null, null);
+         for (Statement quad : dataset.filter(iri, null, null)) {
             // System.out.println(quad);
             subset.add(quad);
-            if (quad.getObject() instanceof BlankNodeOrIRI) {
+            if (quad.getObject() instanceof Resource) {
                if (!termsChecked.contains(quad.getObject())) {
-                  termsToCheck.add((BlankNodeOrIRI) quad.getObject());
+                  termsToCheck.add((Resource) quad.getObject());
                }
             }
          }
@@ -160,12 +196,14 @@ public class RdfUtilities {
     *                  the RDF Backend to be used
     * @return          the RDF literal
     */
-   public static Literal rdfLiteralFromCalendar(Calendar calendar, RDF rdf) {
+   public static Literal rdfLiteralFromCalendar(Calendar calendar) {
+      SimpleValueFactory valueFactory = SimpleValueFactory.getInstance();
       SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
       sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
-      // calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
+      calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
       String dateTimeString = sdf.format(calendar.getTime());
-      Literal timedate = rdf.createLiteral(dateTimeString, Types.XSD_DATETIME);
+
+      Literal timedate = valueFactory.createLiteral(dateTimeString, XSD.DATETIME);
       return timedate;
    }
 }

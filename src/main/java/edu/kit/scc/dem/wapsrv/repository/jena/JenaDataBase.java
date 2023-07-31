@@ -72,14 +72,14 @@ public class JenaDataBase {
                + s.asTriple().getObject().toString());
       });
       Resource root = model.getResource(rootName);
-      Property predicate = model.getProperty(RdfVocab.type.getIRIString());
-      Resource objectBasicContainer = model.getResource(LdpVocab.basicContainer.getIRIString());
-      Resource objectOrderedCollection = model.getResource(AsVocab.orderedCollection.getIRIString());
+      Property predicate = model.getProperty(RdfVocab.type.stringValue());
+      Resource objectBasicContainer = model.getResource(LdpVocab.basicContainer.stringValue());
+      Resource objectOrderedCollection = model.getResource(AsVocab.orderedCollection.stringValue());
       Seq contSeq = model.getSeq(Container.toContainerSeqIriString(root.getURI()));
       Seq annoSeq = model.getSeq(Container.toAnnotationSeqIriString(root.getURI()));
-      Property etagProperty = model.getProperty(WapVocab.etag.getIRIString());
-      Property modifiedProperty = model.getProperty(DcTermsVocab.modified.getIRIString());
-      Property labelProperty = model.getProperty(RdfSchemaVocab.label.getIRIString());
+      Property etagProperty = model.getProperty(WapVocab.etag.stringValue());
+      Property modifiedProperty = model.getProperty(DcTermsVocab.modified.stringValue());
+      Property labelProperty = model.getProperty(RdfSchemaVocab.label.stringValue());
       if (!root.hasProperty(predicate, objectBasicContainer) || !root.hasProperty(predicate, objectOrderedCollection)
             || contSeq == null || annoSeq == null || !root.hasProperty(etagProperty)
             || !root.hasProperty(modifiedProperty) || !root.hasProperty(labelProperty)) {

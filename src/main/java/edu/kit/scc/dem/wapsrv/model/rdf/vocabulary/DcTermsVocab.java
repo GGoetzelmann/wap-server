@@ -1,8 +1,7 @@
 package edu.kit.scc.dem.wapsrv.model.rdf.vocabulary;
 
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.simple.SimpleRDF;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 /**
  * This class provides the vocabulary for dc-terms (http://dublincore.org/documents/dcmi-terms/).
@@ -235,12 +234,9 @@ public class DcTermsVocab {
     * valid
     */
    public static IRI valid = buildIri("http://purl.org/dc/terms/valid");
-   private static RDF rdf;
+
 
    private static IRI buildIri(String property) {
-      if (rdf == null) {
-         rdf = new SimpleRDF();
-      }
-      return rdf.createIRI(property);
+      return SimpleValueFactory.getInstance().createIRI(property);
    }
 }

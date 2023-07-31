@@ -1,8 +1,8 @@
 package edu.kit.scc.dem.wapsrv.model.rdf.vocabulary;
 
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.simple.SimpleRDF;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+
 
 /**
  * This class provides the vocabulary for this Project (from http://dem.scc.kit.edu/wapserv/ns#).
@@ -23,13 +23,9 @@ public class WapVocab {
     * etag - under this the etag of an object is stored in the database
     */
    public static IRI etag = buildIri("etag");
-   private static RDF rdf;
    private static final String ROOT = "http://dem.scc.kit.edu/wapserv/ns#";
 
    private static IRI buildIri(String property) {
-      if (rdf == null) {
-         rdf = new SimpleRDF();
-      }
-      return rdf.createIRI(ROOT + property);
+      return SimpleValueFactory.getInstance().createIRI(ROOT + property);
    }
 }

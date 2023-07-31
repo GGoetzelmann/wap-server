@@ -1,8 +1,8 @@
 package edu.kit.scc.dem.wapsrv.model;
 
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.simple.SimpleRDF;
 import edu.kit.scc.dem.wapsrv.model.rdf.RdfUtilities;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 /**
  * The container interface defines all methods special to containers. These address root containers, labels and other
@@ -42,9 +42,8 @@ public interface Container extends WapObject {
     *             the IRI of the container
     * @return     the IRI of the rdf:seq for Annotations
     */
-   static BlankNodeOrIRI toAnnotationSeqIri(BlankNodeOrIRI iri) {
-      SimpleRDF rdf = new SimpleRDF();
-      return rdf.createIRI(toAnnotationSeqIriString(RdfUtilities.nStringToString(iri.ntriplesString())));
+   static IRI toAnnotationSeqIri(IRI iri) {
+      return SimpleValueFactory.getInstance().createIRI(toAnnotationSeqIriString(RdfUtilities.nStringToString(iri.stringValue())));
    }
 
    /**
@@ -65,9 +64,8 @@ public interface Container extends WapObject {
     *             the IRI of the container
     * @return     the IRI of the rdf:seq for Subcontainers
     */
-   static BlankNodeOrIRI toContainerSeqIri(BlankNodeOrIRI iri) {
-      SimpleRDF rdf = new SimpleRDF();
-      return rdf.createIRI(toContainerSeqIriString(RdfUtilities.nStringToString(iri.ntriplesString())));
+   static IRI toContainerSeqIri(IRI iri) {
+      return SimpleValueFactory.getInstance().createIRI(toContainerSeqIriString(RdfUtilities.nStringToString(iri.stringValue())));
    }
 
    /**

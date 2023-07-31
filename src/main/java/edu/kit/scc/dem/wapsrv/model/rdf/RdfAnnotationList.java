@@ -3,15 +3,16 @@ package edu.kit.scc.dem.wapsrv.model.rdf;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.Quad;
-import org.apache.commons.rdf.api.RDF;
 import edu.kit.scc.dem.wapsrv.exceptions.FormatNotAvailableException;
 import edu.kit.scc.dem.wapsrv.model.Annotation;
 import edu.kit.scc.dem.wapsrv.model.AnnotationList;
 import edu.kit.scc.dem.wapsrv.model.FormattableObject;
 import edu.kit.scc.dem.wapsrv.model.formats.Format;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 /**
  * The RdfAnnotationList implementation
@@ -58,7 +59,7 @@ public class RdfAnnotationList implements AnnotationList {
 
    @Override
    public String toString(Format format) throws FormatNotAvailableException {
-      Dataset dataset = createUnionDataset();
+      Model dataset = createUnionDataset();
       return rdfBackend.getOutput(dataset, format);
    }
 
@@ -67,12 +68,11 @@ public class RdfAnnotationList implements AnnotationList {
     * 
     * @return The combined dataset
     */
-   private Dataset createUnionDataset() {
-      RDF rdf = rdfBackend.getRdf();
-      Dataset combinedDataset = rdf.createDataset();
+   private Model createUnionDataset() {
+      Model combinedDataset = new LinkedHashModel();
       for (Annotation anno : annotations) {
          // Maybe there is need to add a quad that links the different annotations, maybe not.
-         for (Quad quad : anno.getDataset().iterate()) {
+         for (Statement quad : anno.getDataset()) {
             combinedDataset.add(quad);
          }
       }
@@ -111,7 +111,7 @@ public class RdfAnnotationList implements AnnotationList {
 
    @Override
    public void setContainerIri(String containerIri) {
-      setContainerIri(rdfBackend.getRdf().createIRI(containerIri));
+      setContainerIri(SimpleValueFactory.getInstance().createIRI(containerIri));
    }
 
    @Override

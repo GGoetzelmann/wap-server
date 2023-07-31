@@ -1,6 +1,6 @@
 package edu.kit.scc.dem.wapsrv.model.rdf;
 
-import org.apache.commons.rdf.api.Dataset;
+import org.eclipse.rdf4j.model.Model;
 
 /**
  * Base interface for RdfTransactions
@@ -19,5 +19,5 @@ public interface RdfTransactionExecuter {
     * @param ds
     *           the Dataset to be read or write
     */
-   void execute(Dataset ds);
+   void execute(Model ds);
 }

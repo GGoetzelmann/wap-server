@@ -4,17 +4,17 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
 import java.util.Vector;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.Literal;
-import org.apache.commons.rdf.api.Triple;
+
+import edu.kit.scc.dem.wapsrv.app.WapServerConfig;
+import edu.kit.scc.dem.wapsrv.exceptions.WapException;
+import org.eclipse.rdf4j.model.*;
 import edu.kit.scc.dem.wapsrv.model.WapObject;
 import edu.kit.scc.dem.wapsrv.model.formats.Format;
 import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.AnnoVocab;
 import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.DcTermsVocab;
 import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.RdfVocab;
 import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.WapVocab;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 /**
  * Basic RdfWapObject implementing all common functionality of Annotations and Containers.
@@ -34,9 +34,9 @@ public abstract class RdfWapObject implements WapObject {
    /**
     * The data set used as internal model
     */
-   protected final Dataset dataset;
+   protected final Model dataset;
    /** The IRI of the WapObject */
-   protected BlankNodeOrIRI iri;
+   protected Resource iri;
    private String etag;
 
    /**
@@ -47,14 +47,22 @@ public abstract class RdfWapObject implements WapObject {
     * @param rdfBackend
     *                   The RDF backend
     */
-   public RdfWapObject(Dataset dataset, RdfBackend rdfBackend) {
+
+   public RdfWapObject(Model dataset, RdfBackend rdfBackend) {
+      if (dataset.size() == 0) {
+         throw new WapException("No triples in dataset, WAP object cannot be created", 500);
+      }
       this.dataset = dataset;
       this.rdfBackend = rdfBackend;
+      //TODO: Check why the iri was never set before and it somehow still worked
+      Resource possibleIRI = dataset.subjects().iterator().next();
+      this.iri = possibleIRI;
+
       // Extract ETag and remove from data set.
-      Optional<? extends Triple> etagTriple = dataset.getGraph().stream(iri, WapVocab.etag, null).findFirst();
+      Optional<? extends Statement> etagTriple = dataset.filter(iri, WapVocab.etag, null).stream().findFirst();
       if (etagTriple.isPresent()) {
-         etag = RdfUtilities.nStringToString(etagTriple.get().getObject().ntriplesString());
-         dataset.getGraph().remove(iri, WapVocab.etag, null);
+         etag = RdfUtilities.nStringToString(etagTriple.get().getObject().stringValue());
+         dataset.remove(iri, WapVocab.etag, null);
       } else {
          // Set eTag null -> to be handled in Repository
          etag = null;
@@ -68,8 +76,8 @@ public abstract class RdfWapObject implements WapObject {
     *              the IRI representation of the rdf:type
     * @return      the IRI of the node declaring the given rdf:type
     */
-   public BlankNodeOrIRI getIriForType(IRI type) {
-      Optional<? extends Triple> triple = dataset.getGraph().stream(null, RdfVocab.type, type).findFirst();
+   public Resource getIriForType(IRI type) {
+      Optional<? extends Statement> triple = dataset.filter(null, RdfVocab.type, type).stream().findFirst();
       if (!triple.isPresent()) {
          // Not a valid WapObject of the defined Type
          return null;
@@ -78,7 +86,7 @@ public abstract class RdfWapObject implements WapObject {
    }
 
    @Override
-   public Dataset getDataset() {
+   public Model getDataset() {
       return dataset;
    }
 
@@ -104,54 +112,67 @@ public abstract class RdfWapObject implements WapObject {
    }
 
    @Override
-   public BlankNodeOrIRI getIri() {
-      return iri;
+   public IRI getIri() {
+      if (iri.isIRI()) {
+         return (IRI) iri;
+      }
+      if (iri.isBNode()) {
+         return SimpleValueFactory.getInstance().createIRI("_:" + ((BNode) iri).getID());
+      }
+      return null;
    }
 
+   //TODO: iri handling is not smooth anymore
    @Override
-   public void setIri(BlankNodeOrIRI newIri, boolean copyVia) {
-      // Check if IRI is same
-      if (newIri.equals(iri))
-         return;
-      BlankNodeOrIRI oldIRI = iri;
-      RdfUtilities.renameNodeIri(dataset, iri, newIri);
-      iri = newIri;
-      // never copy blank node identifiers
-      if (copyVia && !oldIRI.ntriplesString().startsWith("_:")) {
-         // Add via
-         dataset.getGraph().add(iri, AnnoVocab.via, oldIRI);
+   public void setIri(IRI newIri, boolean copyVia) {
+
+      if (!iri.isBNode()) {
+         //check can only happen if IRI is not currently a bnode id
+         if (newIri.equals((IRI) iri))
+            return;
+         IRI oldIRI = (IRI) iri;
+         RdfUtilities.renameNodeIri(dataset, oldIRI, newIri);
+         iri = newIri;
+         if (copyVia) {
+            dataset.add(iri, AnnoVocab.via, oldIRI);
+         }
+      } else {
+         RdfUtilities.BNodesToIRI(dataset, (BNode) iri, newIri);
       }
+
+
+      iri = newIri;
    }
 
    @Override
    public void setIri(String iri) {
-      setIri(rdfBackend.getRdf().createIRI(iri));
+      setIri(SimpleValueFactory.getInstance().createIRI(iri));
    }
 
    @Override
    public void setIri(String iri, boolean copyVia) {
-      setIri(rdfBackend.getRdf().createIRI(iri), copyVia);
+      setIri(SimpleValueFactory.getInstance().createIRI(iri), copyVia);
    }
 
    @Override
-   public void setIri(BlankNodeOrIRI iri) {
+   public void setIri(IRI iri) {
       setIri(iri, true);
    }
 
    @Override
    public void setCreated() {
-      if (!dataset.getGraph().contains(iri, DcTermsVocab.created, null)) {
+      if (!dataset.contains(iri, DcTermsVocab.created, null)) {
          Calendar calendar = Calendar.getInstance();
-         Literal timedate = RdfUtilities.rdfLiteralFromCalendar(calendar, rdfBackend.getRdf());
-         dataset.getGraph().add(iri, DcTermsVocab.created, timedate);
+         Literal timedate = RdfUtilities.rdfLiteralFromCalendar(calendar);
+         dataset.add(iri, DcTermsVocab.created, timedate);
       }
    }
 
    @Override
    public String getValue(IRI propertyName) {
-      Optional<? extends Triple> triple = dataset.getGraph().stream(iri, propertyName, null).findFirst();
+      Optional<? extends Statement> triple = dataset.filter(iri, propertyName, null).stream().findFirst();
       if (triple.isPresent()) {
-         return RdfUtilities.nStringToString(triple.get().getObject().ntriplesString());
+         return RdfUtilities.nStringToString(triple.get().getObject().stringValue());
       }
       return null;
    }
@@ -159,8 +180,8 @@ public abstract class RdfWapObject implements WapObject {
    @Override
    public List<String> getValues(IRI propertyName) {
       Vector<String> values = new Vector<>();
-      dataset.getGraph().stream(iri, propertyName, null).forEach(t -> {
-         values.add(RdfUtilities.nStringToString(t.getObject().ntriplesString()));
+      dataset.filter(iri, propertyName, null).forEach(t -> {
+         values.add(RdfUtilities.nStringToString(t.getObject().stringValue()));
       });
       return values;
    }

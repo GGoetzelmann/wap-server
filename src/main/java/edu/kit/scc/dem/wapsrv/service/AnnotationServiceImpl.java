@@ -2,7 +2,8 @@ package edu.kit.scc.dem.wapsrv.service;
 
 import java.util.Optional;
 import java.util.UUID;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import edu.kit.scc.dem.wapsrv.app.EtagFactory;
@@ -92,11 +93,12 @@ public class AnnotationServiceImpl extends AbstractWapService implements Annotat
     }
     String oldEtag = etag;
     // Just to clarify this. The annotation has already a new one set.
-    BlankNodeOrIRI node = repository.getRdf().createIRI(iri);
+    IRI node = SimpleValueFactory.getInstance().createIRI(iri);
     repository.writeRdfTransaction(ds -> {
       checkExistsAndNotDeleted(iri);
       checkEtag(iri, oldEtag);
-      ds.remove(Optional.of(node), null, null, null);
+      ds.remove(node, null, null);
+      repository.removeAll(iri);
       writeWapObjectToDb(newAnnotation);
       // New ETag for parent container
       updateEtag(WapObject.getParentContainerIriString(iri), etagFactory.generateEtag());
@@ -152,7 +154,7 @@ public class AnnotationServiceImpl extends AbstractWapService implements Annotat
       if(annotation.getIri() == null){
         // It may be that the annotation cannot be parsed if it has no id field,
         // but this additional check is not performance relevant.
-        throw new NotAnAnnotationException();
+        throw new NotAnAnnotationException("The Annotation has no IRI.");
       }
       if(!annotation.hasTarget()){
         throw new NotAnAnnotationException("The Annotation has no Target.");

@@ -1,6 +1,6 @@
 package edu.kit.scc.dem.wapsrv.model;
 
-import org.apache.commons.rdf.api.Dataset;
+import org.eclipse.rdf4j.model.Model;
 
 /**
  * Page objects need to implement this interface. Pages are used only as outgoing objects and are created with data in
@@ -90,5 +90,5 @@ public interface Page extends FormattableObject {
     *
     * @return the Dataset
     */
-   Dataset getDataset();
+   Model getDataset();
 }

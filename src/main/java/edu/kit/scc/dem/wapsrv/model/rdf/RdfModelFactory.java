@@ -2,11 +2,11 @@ package edu.kit.scc.dem.wapsrv.model.rdf;
 
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.Quad;
-import org.apache.commons.rdf.api.RDF;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import edu.kit.scc.dem.wapsrv.exceptions.NotAnAnnotationException;
@@ -32,10 +32,6 @@ import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.RdfVocab;
 @Component
 public class RdfModelFactory implements ModelFactory {
    /**
-    * The underlying RDF
-    */
-   private RDF rdf;
-   /**
     * The used RDF backend
     */
    private RdfBackend rdfBackend;
@@ -49,35 +45,30 @@ public class RdfModelFactory implements ModelFactory {
    @Autowired
    private void setRdfBackend(RdfBackend rdfBackend) {
       this.rdfBackend = rdfBackend;
-      this.rdf = rdfBackend.getRdf();
+      //this.rdf = rdfBackend.getRdf();
    }
 
    @Override
    public AnnotationList createAnnotationList(String rawAnnotation, Format format) {
       AnnotationList annotationList = new RdfAnnotationList(rdfBackend);
-      Dataset dataset = rdfBackend.readFromString(rawAnnotation, format);
-      Set<BlankNodeOrIRI> annotationIris = new HashSet<BlankNodeOrIRI>();
-      Iterable<Quad> iterator = dataset.iterate(null, null, RdfVocab.type, AnnoVocab.annotation);
-      for (Quad quad : iterator) {
-         annotationIris.add(quad.getSubject());
+      Model dataset = rdfBackend.readFromString(rawAnnotation, format);
+      Set<Resource> annotationIris = new HashSet<Resource>();
+      Model iterator = dataset.filter(null, RdfVocab.type, AnnoVocab.annotation);
+      for (Statement statement : iterator) {
+         annotationIris.add(statement.getSubject());
       }
       if (annotationIris.isEmpty()) {
          throw new NotAnAnnotationException();
       }
-      for (BlankNodeOrIRI iri : annotationIris) {
-         Dataset annoDataset = RdfUtilities.getSubDataset(dataset, rdf, iri);
+      for (Resource iri : annotationIris) {
+         Model annoDataset = RdfUtilities.getSubDataset(dataset, iri);
          annotationList.addAnnotation(new RdfAnnotation(annoDataset, rdfBackend));
       }
       return annotationList;
    }
 
    @Override
-   public RDF getRDF() {
-      return rdf;
-   }
-
-   @Override
-   public Annotation createAnnotation(Dataset dataSet) {
+   public Annotation createAnnotation(Model dataSet) {
       return new RdfAnnotation(dataSet, rdfBackend);
    }
 
@@ -93,20 +84,20 @@ public class RdfModelFactory implements ModelFactory {
    }
 
    @Override
-   public Page createPage(Dataset dataset, String containerIri, int pageNr, boolean preferIrisOnly, boolean isEmbedded,
+   public Page createPage(Model dataset, String containerIri, int pageNr, boolean preferIrisOnly, boolean isEmbedded,
          int annoTotalCount, String modified, String label) {
       return new RdfPage(dataset, containerIri, pageNr, preferIrisOnly, isEmbedded, annoTotalCount, modified, label,
             rdfBackend);
    }
 
    @Override
-   public Container createContainer(Dataset dataset, boolean preferMinimalContainer, boolean preferIrisOnly) {
+   public Container createContainer(Model dataset, boolean preferMinimalContainer, boolean preferIrisOnly) {
       return new RdfOutputContainer(dataset, preferMinimalContainer, preferIrisOnly, rdfBackend);
    }
 
    @Override
    public Container createContainer(String rawContainer, Format format, String newContainerIri) {
-      IRI containerIri = rdf.createIRI(newContainerIri);
+      IRI containerIri = SimpleValueFactory.getInstance().createIRI(newContainerIri);
       RdfContainer container
             = new RdfContainer(rdfBackend.readFromString(rawContainer, format), rdfBackend, containerIri);
       return container;
@@ -114,12 +105,12 @@ public class RdfModelFactory implements ModelFactory {
 
    @Override
    public String convertFormat(String rawString, Format srcFormat, Format destFormat) {
-      Dataset dataset = rdfBackend.readFromString(rawString, srcFormat);
+      Model dataset = rdfBackend.readFromString(rawString, srcFormat);
       return rdfBackend.getOutput(dataset, destFormat);
    }
 
    @Override
-   public Container createContainer(Dataset dataset) {
+   public Container createContainer(Model dataset) {
       // Default is preferMinimalContainer and irisOnly
       return createContainer(dataset, true, true);
    }

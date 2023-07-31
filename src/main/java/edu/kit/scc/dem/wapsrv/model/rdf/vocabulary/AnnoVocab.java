@@ -1,8 +1,7 @@
 package edu.kit.scc.dem.wapsrv.model.rdf.vocabulary;
 
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.simple.SimpleRDF;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 /**
  * This class provides the vocabulary for annotations of the W3C (from http://www.w3.org/ns/oa#).
@@ -259,13 +258,10 @@ public class AnnoVocab {
     * end
     */
    public static IRI end = buildIri("end");
-   private static RDF rdf;
    private static final String ROOT = "http://www.w3.org/ns/oa#";
 
    private static IRI buildIri(String property) {
-      if (rdf == null) {
-         rdf = new SimpleRDF();
-      }
-      return rdf.createIRI(ROOT + property);
+
+      return SimpleValueFactory.getInstance().createIRI(ROOT + property);
    }
 }

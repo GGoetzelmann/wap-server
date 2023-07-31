@@ -3,17 +3,18 @@ package edu.kit.scc.dem.wapsrv.repository.jena;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import javax.annotation.PostConstruct;
-import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.jena.JenaDataset;
-import org.apache.commons.rdf.jena.JenaRDF;
-import org.apache.jena.graph.Graph;
+
+import edu.kit.scc.dem.wapsrv.model.rdf.RDF4JUtilities;
 import org.apache.jena.query.Dataset;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.Seq;
+import org.apache.jena.rdf.model.*;
 import org.apache.jena.tdb2.DatabaseMgr;
+
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import edu.kit.scc.dem.wapsrv.app.WapServerConfig;
 import edu.kit.scc.dem.wapsrv.exceptions.NotExistentException;
@@ -22,7 +23,6 @@ import edu.kit.scc.dem.wapsrv.model.rdf.RdfBackend;
 import edu.kit.scc.dem.wapsrv.repository.CollectedRepository;
 import edu.kit.scc.dem.wapsrv.repository.TransactionRepository;
 import org.apache.jena.query.ReadWrite;
-import org.apache.jena.query.TxnType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
@@ -85,15 +85,16 @@ public class JenaRepository extends CollectedRepository {
     }
 
     @Override
-    public org.apache.commons.rdf.api.Dataset getWapObject(String iri) {
-        org.apache.commons.rdf.api.Dataset retDs = rdfBackend.getRdf().createDataset();
-        JenaDataset jenaDs = (JenaDataset) retDs;
+    public org.eclipse.rdf4j.model.Model getWapObject(String iri) {
+        org.eclipse.rdf4j.model.Model  retDs = new LinkedHashModel();
+        //TODO: Continue to remove Apache Commons
         if (!dataBase.containsNamedModel(iri)) {
             throw new NotExistentException("the requested container does not exist");
         }
         Model readModel = dataBase.getNamedModel(iri);
         readModel.listStatements().forEachRemaining(s -> {
-            jenaDs.asJenaDatasetGraph().getDefaultGraph().add(s.asTriple());
+            //s.asJenaDatasetGraph().getDefaultGraph().add(s.asTriple());
+            retDs.add(RDF4JUtilities.toRDF4JStatement(s));
         });
         return retDs;
     }
@@ -177,11 +178,6 @@ public class JenaRepository extends CollectedRepository {
     }
 
     @Override
-    public RDF getRdf() {
-        return rdfBackend.getRdf();
-    }
-
-    @Override
     public void addElementToRdfSeq(String modelIri, String seqIri, String objIri) {
         Model model = dataBase.getNamedModel(modelIri);
         Seq seq = model.getSeq(seqIri);
@@ -208,10 +204,16 @@ public class JenaRepository extends CollectedRepository {
 
     @Override
     public void writeObjectToDatabase(WapObject wapObject) {
-        org.apache.commons.rdf.api.Dataset dataset = wapObject.getDataset();
-        JenaDataset jenaDs = (JenaDataset) dataset;
-        Graph jenaGraph = jenaDs.asJenaDatasetGraph().getDefaultGraph();
-        Model jenaModel = org.apache.jena.rdf.model.ModelFactory.createModelForGraph(jenaGraph);
+        org.eclipse.rdf4j.model.Model dataset = wapObject.getDataset();
+
+        Model jenaModel = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+        HashMap<String, Resource> bnodeMapping = new HashMap<>();
+        for (org.eclipse.rdf4j.model.Statement rdf4jStatement: dataset) {
+            org.apache.jena.rdf.model.Statement jenaStatement = RDF4JUtilities.toJenaStatement(rdf4jStatement, bnodeMapping);
+
+            jenaModel.add(jenaStatement);
+        }
+
         String iriString = wapObject.getIriString();
         dataBase.addNamedModel(iriString, jenaModel);
         // Model returnValue = dataBase.getNamedModel(iriString);
@@ -237,9 +239,23 @@ public class JenaRepository extends CollectedRepository {
     }
 
     @Override
-    public org.apache.commons.rdf.api.Dataset getTransactionDataset() {
-        JenaRDF jenaRDF = (JenaRDF) rdfBackend.getRdf();
-        JenaDataset transactionDataset = jenaRDF.asDataset(dataBase);
+    public org.eclipse.rdf4j.model.Model getTransactionDataset() {
+
+        ModelBuilder modelBuilder = new ModelBuilder();
+        dataBase.listNames().forEachRemaining(graphName -> {
+            Model jenaModel = dataBase.getNamedModel(graphName);
+            StmtIterator iterator = jenaModel.listStatements();
+            while (iterator.hasNext()) {
+                Statement jenaStatement = iterator.nextStatement();
+                org.eclipse.rdf4j.model.Statement stat = RDF4JUtilities.toRDF4JStatement(jenaStatement);
+                org.eclipse.rdf4j.model.Resource subject = stat.getSubject();
+                org.eclipse.rdf4j.model.IRI predicate = stat.getPredicate();
+                org.eclipse.rdf4j.model.Value object = stat.getObject();
+                modelBuilder.add(subject, predicate, object);
+            }
+        });
+
+        org.eclipse.rdf4j.model.Model transactionDataset = modelBuilder.build();
         return transactionDataset;
     }
 
@@ -250,5 +266,54 @@ public class JenaRepository extends CollectedRepository {
         model.removeAll(subject, null, null);
         // regenerate the seq.
         model.createSeq(seqIri);
+    }
+
+    @Override
+    public void updateTriple(String modelIri, org.eclipse.rdf4j.model.Statement oldStatement, org.eclipse.rdf4j.model.Statement newStatement) {
+        Model model = dataBase.getNamedModel(modelIri);
+
+        removeTriple(modelIri, oldStatement);
+        addTriple(modelIri, newStatement);
+        /*
+        Statement jenaStatement1 = RDF4JUtilities.toJenaStatement(oldStatement);
+        Statement jenaStatement2 = RDF4JUtilities.toJenaStatement(newStatement);
+        Resource oldSubject = jenaStatement1.getSubject();
+        Property oldPredicate = jenaStatement1.getPredicate();
+        RDFNode oldObject = jenaStatement1.getObject();
+        Resource newSubject = jenaStatement2.getSubject();
+        Property newPredicate = jenaStatement2.getPredicate();
+        RDFNode newObject = jenaStatement2.getObject();
+
+        model.remove(oldSubject, oldPredicate, oldObject);
+        model.add(newSubject, newPredicate, newObject);
+
+         */
+    }
+
+    @Override
+    public void addTriple(String modelIri, org.eclipse.rdf4j.model.Statement statement) {
+        Model model = dataBase.getNamedModel(modelIri);
+        Statement jenaStatement1 = RDF4JUtilities.toJenaStatement(statement);
+        Resource subject = jenaStatement1.getSubject();
+        Property predicate = jenaStatement1.getPredicate();
+        RDFNode object = jenaStatement1.getObject();
+        model.add(subject, predicate, object);
+    }
+
+    @Override
+    public void removeTriple(String modelIri, org.eclipse.rdf4j.model.Statement statement) {
+        Model model = dataBase.getNamedModel(modelIri);
+        Statement jenaStatement1 = RDF4JUtilities.toJenaStatement(statement);
+        Resource subject = jenaStatement1.getSubject();
+        Property predicate = jenaStatement1.getPredicate();
+        RDFNode object = jenaStatement1.getObject();
+        model.remove(subject, predicate, object);
+    }
+
+    @Override
+    public void removeAll(String iri) {
+        Model model = dataBase.getNamedModel(iri);
+        //TODO: check if that was the intended function before: removes all triples with ID as the subject from the named graph with the same ID as the subject
+        model.removeAll(ModelFactory.createDefaultModel().createResource(iri), null, null);
     }
 }

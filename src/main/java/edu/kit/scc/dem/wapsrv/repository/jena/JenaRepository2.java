@@ -6,14 +6,19 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.PostConstruct;
-import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.jena.JenaDataset;
-import org.apache.commons.rdf.jena.JenaRDF;
+
+import edu.kit.scc.dem.wapsrv.model.rdf.RDF4JUtilities;
 import org.apache.jena.graph.Graph;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.rdf.model.StmtIterator;
 import org.apache.jena.tdb2.DatabaseMgr;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Value;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import edu.kit.scc.dem.wapsrv.app.WapServerConfig;
@@ -97,17 +102,38 @@ public class JenaRepository2 extends CollectedRepository{
   }
 
   @Override
-  public org.apache.commons.rdf.api.Dataset getWapObject(String iri){
-    org.apache.commons.rdf.api.Dataset retDs = rdfBackend.getRdf().createDataset();
-    JenaDataset jenaDs = (JenaDataset) retDs;
-    if(!dataBase.containsNamedModel(iri)){
+  public org.eclipse.rdf4j.model.Model getWapObject(String iri) {
+    org.eclipse.rdf4j.model.Model  retDs = new LinkedHashModel();
+    //TODO: Continue to remove Apache Commons
+    if (!dataBase.containsNamedModel(iri)) {
       throw new NotExistentException("the requested container does not exist");
     }
     Model readModel = dataBase.getNamedModel(iri);
     readModel.listStatements().forEachRemaining(s -> {
-      jenaDs.asJenaDatasetGraph().getDefaultGraph().add(s.asTriple());
+      //s.asJenaDatasetGraph().getDefaultGraph().add(s.asTriple());
+      retDs.add(RDF4JUtilities.toRDF4JStatement(s));
     });
     return retDs;
+  }
+
+  @Override
+  public void updateTriple(String modelIri, org.eclipse.rdf4j.model.Statement oldStatement, org.eclipse.rdf4j.model.Statement newStatement) {
+    //not implemented yet
+  }
+
+  @Override
+  public void addTriple(String modelIri, org.eclipse.rdf4j.model.Statement statement) {
+    //not implemented yet
+  }
+
+  @Override
+  public void removeTriple(String modelIri, org.eclipse.rdf4j.model.Statement statement) {
+    //not implemented yet
+  }
+
+  @Override
+  public void removeAll(String modelIri) {
+    //not implemented yet
   }
 
   @Override
@@ -175,11 +201,6 @@ public class JenaRepository2 extends CollectedRepository{
   }
 
   @Override
-  public RDF getRdf(){
-    return rdfBackend.getRdf();
-  }
-
-  @Override
   public void addElementToRdfSeq(String modelIri, String seqIri, String objIri){
     log.trace("Entering addElementToRdfSeq({}, {}, {})).", modelIri, seqIri, objIri);
     SequenceResource res = SequenceResource.create(seqIri, objIri);
@@ -209,13 +230,27 @@ public class JenaRepository2 extends CollectedRepository{
   }
 
   @Override
-  public void writeObjectToDatabase(WapObject wapObject){
-    org.apache.commons.rdf.api.Dataset dataset = wapObject.getDataset();
-    JenaDataset jenaDs = (JenaDataset) dataset;
-    Graph jenaGraph = jenaDs.asJenaDatasetGraph().getDefaultGraph();
-    Model jenaModel = org.apache.jena.rdf.model.ModelFactory.createModelForGraph(jenaGraph);
+  public void writeObjectToDatabase(WapObject wapObject) {
+    org.eclipse.rdf4j.model.Model dataset = wapObject.getDataset();
+
+    Model jenaModel = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
+    for (org.eclipse.rdf4j.model.Statement rdf4jStatement: dataset) {
+      org.eclipse.rdf4j.model.Resource subject = rdf4jStatement.getSubject();
+      IRI predicate = rdf4jStatement.getPredicate();
+      Value object = rdf4jStatement.getObject();
+
+      org.apache.jena.rdf.model.Statement jenaStatement = jenaModel.createStatement(
+              jenaModel.createResource(subject.stringValue()),
+              jenaModel.createProperty(predicate.stringValue()),
+              jenaModel.createTypedLiteral(object.stringValue())
+      );
+
+      jenaModel.add(jenaStatement);
+    }
+
     String iriString = wapObject.getIriString();
     dataBase.addNamedModel(iriString, jenaModel);
+    // Model returnValue = dataBase.getNamedModel(iriString);
   }
 
   @Override
@@ -242,9 +277,23 @@ public class JenaRepository2 extends CollectedRepository{
   }
 
   @Override
-  public org.apache.commons.rdf.api.Dataset getTransactionDataset(){
-    JenaRDF jenaRDF = (JenaRDF) rdfBackend.getRdf();
-    JenaDataset transactionDataset = jenaRDF.asDataset(dataBase);
+  public org.eclipse.rdf4j.model.Model getTransactionDataset() {
+
+    ModelBuilder modelBuilder = new ModelBuilder();
+    dataBase.listNames().forEachRemaining(graphName -> {
+      Model jenaModel = dataBase.getNamedModel(graphName);
+      StmtIterator iterator = jenaModel.listStatements();
+      while (iterator.hasNext()) {
+        Statement jenaStatement = iterator.nextStatement();
+        org.eclipse.rdf4j.model.Statement stat = RDF4JUtilities.toRDF4JStatement(jenaStatement);
+        org.eclipse.rdf4j.model.Resource subject = stat.getSubject();
+        org.eclipse.rdf4j.model.IRI predicate = stat.getPredicate();
+        org.eclipse.rdf4j.model.Value object = stat.getObject();
+        modelBuilder.add(subject, predicate, object);
+      }
+    });
+
+    org.eclipse.rdf4j.model.Model transactionDataset = modelBuilder.build();
     return transactionDataset;
   }
 

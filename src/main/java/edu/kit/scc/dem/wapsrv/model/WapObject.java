@@ -1,10 +1,10 @@
 package edu.kit.scc.dem.wapsrv.model;
 
 import java.util.List;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.IRI;
+import org.eclipse.rdf4j.model.IRI;
 import edu.kit.scc.dem.wapsrv.model.rdf.RdfUtilities;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
 
 /**
  * The WapObject that is the base interface Annotation and Container extend
@@ -22,14 +22,14 @@ public interface WapObject extends FormattableObject {
     * 
     * @return The data set
     */
-   Dataset getDataset();
+   Model getDataset();
 
    /**
     * Returns the IRI of the WapObject.
     * 
     * @return The IRI
     */
-   BlankNodeOrIRI getIri();
+   IRI getIri();
 
    /**
     * Returns the IRI of the WapObject.
@@ -37,7 +37,7 @@ public interface WapObject extends FormattableObject {
     * @return The IRI
     */
    default String getIriString() {
-      return RdfUtilities.nStringToString(getIri().ntriplesString());
+      return RdfUtilities.nStringToString(getIri().stringValue());
    }
 
    /**
@@ -46,7 +46,7 @@ public interface WapObject extends FormattableObject {
     * @param iri
     *            The IRI to set
     */
-   void setIri(BlankNodeOrIRI iri);
+   void setIri(IRI iri);
 
    /**
     * Sets the IRI of the WapObject.
@@ -56,7 +56,7 @@ public interface WapObject extends FormattableObject {
     * @param copyVia
     *                true, if the IRI should be copied to via field, else false
     */
-   void setIri(BlankNodeOrIRI iri, boolean copyVia);
+   void setIri(IRI iri, boolean copyVia);
 
    /**
     * Sets the IRI of the WapObject.

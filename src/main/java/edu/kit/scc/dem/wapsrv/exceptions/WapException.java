@@ -12,7 +12,7 @@ package edu.kit.scc.dem.wapsrv.exceptions;
  * @author  Timo Schmidt
  * @version 1.1
  */
-public abstract class WapException extends RuntimeException {
+public class WapException extends RuntimeException {
    /**
     * The serial version UID for java serialization
     */

@@ -174,7 +174,7 @@ public final class JsonLdFormatter extends AbstractFormatter {
         String[] lines = jsonLdWithBlankNodeIds.split(Pattern.quote("\n"));
         for (String line : lines) {
             if (line.trim().startsWith("\"id\"")) {
-                if (line.indexOf("\"_:b") != -1) {
+                if (line.indexOf("\"_:") != -1) {
                     continue; // skip this unneeded line
                 } else {
                     builder.append(line);

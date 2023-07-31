@@ -1,8 +1,7 @@
 package edu.kit.scc.dem.wapsrv.model.rdf.vocabulary;
 
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.RDF;
-import org.apache.commons.rdf.simple.SimpleRDF;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 /**
  * This class provides the vocabulary for RDF schema (https://www.w3.org/2000/01/rdf-schema#) this class currently only
@@ -20,13 +19,10 @@ public class RdfSchemaVocab {
     * label
     */
    public static IRI label = buildIri("label");
-   private static RDF rdf;
    private static final String ROOT = "http://www.w3.org/2000/01/rdf-schema#";
 
    private static IRI buildIri(String property) {
-      if (rdf == null) {
-         rdf = new SimpleRDF();
-      }
-      return rdf.createIRI(ROOT + property);
+
+      return SimpleValueFactory.getInstance().createIRI(ROOT + property);
    }
 }

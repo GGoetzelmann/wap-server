@@ -1,11 +1,5 @@
 package edu.kit.scc.dem.wapsrv.model.rdf;
 
-import org.apache.commons.rdf.api.BlankNode;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.Graph;
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.simple.Types;
 import edu.kit.scc.dem.wapsrv.app.WapServerConfig;
 import edu.kit.scc.dem.wapsrv.exceptions.FormatNotAvailableException;
 import edu.kit.scc.dem.wapsrv.model.Annotation;
@@ -17,6 +11,12 @@ import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.AsVocab;
 import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.DcTermsVocab;
 import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.RdfSchemaVocab;
 import edu.kit.scc.dem.wapsrv.model.rdf.vocabulary.RdfVocab;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.model.vocabulary.XSD;
 
 /**
  * Implements a Page with RDF commons as data backend
@@ -36,7 +36,7 @@ public class RdfPage implements Page {
    /**
     * The data set used as internal model
     */
-   private final Dataset dataset;
+   private final Model dataset;
    private IRI iriPreferOnly;
    private IRI iriFull;
    private int pageNr;
@@ -68,8 +68,8 @@ public class RdfPage implements Page {
     * @param rdfBackend
     *                           The RDF backend
     */
-   public RdfPage(Dataset dataset, String containerIriString, int pageNr, boolean preferIrisOnly, boolean isEmbedded,
-         int annoTotalCount, String modified, String label, RdfBackend rdfBackend) {
+   public RdfPage(Model dataset, String containerIriString, int pageNr, boolean preferIrisOnly, boolean isEmbedded,
+                  int annoTotalCount, String modified, String label, RdfBackend rdfBackend) {
       this.dataset = dataset;
       this.rdfBackend = rdfBackend;
       this.pageNr = pageNr;
@@ -81,44 +81,44 @@ public class RdfPage implements Page {
       iriFull = getIriforPage(pageNr);
       // IRI containerIri = rdfBackend.getRdf().createIRI(containerIriString);
       // Put basic information
-      dataset.getGraph().add(iriFull, RdfVocab.type, AsVocab.orderedCollectionPage);
+      dataset.add(iriFull, RdfVocab.type, AsVocab.orderedCollectionPage);
       if (!isEmbedded) {
          // --- part of content start
-         dataset.getGraph().add(iriFull, AsVocab.partOf, iriPreferOnly);
-         dataset.getGraph().add(iriPreferOnly, AsVocab.totalItems,
-               rdfBackend.getRdf().createLiteral(String.valueOf(annoTotalCount), Types.XSD_NONNEGATIVEINTEGER));
-         dataset.getGraph().add(iriPreferOnly, DcTermsVocab.modified,
-               rdfBackend.getRdf().createLiteral(String.valueOf(modified), Types.XSD_DATETIME));
-         dataset.getGraph().add(iriPreferOnly, AsVocab.first, getIriforPage(0));
-         dataset.getGraph().add(iriPreferOnly, AsVocab.last, getIriforPage(getPageCount() - 1));
+         dataset.add(iriFull, AsVocab.partOf, iriPreferOnly);
+         dataset.add(iriPreferOnly, AsVocab.totalItems,
+               SimpleValueFactory.getInstance().createLiteral(String.valueOf(annoTotalCount), XSD.NON_NEGATIVE_INTEGER));
+         dataset.add(iriPreferOnly, DcTermsVocab.modified,
+                 SimpleValueFactory.getInstance().createLiteral(modified));
+         dataset.add(iriPreferOnly, AsVocab.first, getIriforPage(0));
+         dataset.add(iriPreferOnly, AsVocab.last, getIriforPage(getPageCount() - 1));
          // label from container
-         dataset.getGraph().add(iriPreferOnly, RdfSchemaVocab.label, rdfBackend.getRdf().createLiteral(label));
+         dataset.add(iriPreferOnly, RdfSchemaVocab.label, SimpleValueFactory.getInstance().createLiteral(label));
          // --- part of content end
       }
-      asCollection = new AsCollection(dataset.getGraph(), iriFull);
+      asCollection = new AsCollection(dataset, iriFull);
       // Set startIndex
-      dataset.getGraph().add(iriFull, AsVocab.startIndex, rdfBackend.getRdf()
-            .createLiteral(String.valueOf(getFirstAnnotationPosition()), Types.XSD_NONNEGATIVEINTEGER));
+      dataset.add(iriFull, AsVocab.startIndex, SimpleValueFactory.getInstance()
+            .createLiteral(String.valueOf(getFirstAnnotationPosition()), XSD.NON_NEGATIVE_INTEGER));
       // Put next/prev pages
       if (hasNextPage()) {
-         dataset.getGraph().add(iriFull, AsVocab.next, getIriforPage(pageNr + 1));
+         dataset.add(iriFull, AsVocab.next, getIriforPage(pageNr + 1));
       }
       if (hasPreviousPage()) {
-         dataset.getGraph().add(iriFull, AsVocab.prev, getIriforPage(pageNr - 1));
+         dataset.add(iriFull, AsVocab.prev, getIriforPage(pageNr - 1));
       }
    }
 
    private IRI getIriPreferOnly() {
-      return rdfBackend.getRdf().createIRI(containerIri + "?iris=" + (preferIrisOnly ? 1 : 0));
+      return SimpleValueFactory.getInstance().createIRI(containerIri + "?iris=" + (preferIrisOnly ? 1 : 0));
    }
 
    private IRI getIriforPage(int pageNr) {
-      return rdfBackend.getRdf().createIRI(getIriPreferOnly().getIRIString() + "&page=" + pageNr);
+      return SimpleValueFactory.getInstance().createIRI(getIriPreferOnly().stringValue() + "&page=" + pageNr);
    }
 
    @Override
    public String getIri() {
-      return iriPreferOnly.getIRIString() + "&page=" + pageNr;
+      return iriPreferOnly.stringValue() + "&page=" + pageNr;
    }
 
    @Override
@@ -147,7 +147,7 @@ public class RdfPage implements Page {
       if (!hasNextPage()) {
          return null;
       } else {
-         return iriPreferOnly.getIRIString() + "&page=" + (pageNr + 1);
+         return iriPreferOnly.stringValue() + "&page=" + (pageNr + 1);
       }
    }
 
@@ -156,7 +156,7 @@ public class RdfPage implements Page {
       if (!hasPreviousPage()) {
          return null;
       } else {
-         return iriPreferOnly.getIRIString() + "&page=" + (pageNr - 1);
+         return iriPreferOnly.stringValue() + "&page=" + (pageNr - 1);
       }
    }
 
@@ -177,9 +177,9 @@ public class RdfPage implements Page {
          addAnnotationIri(anno.getIriString());
       }
       asCollection.addItem(anno.getIri());
-      Dataset annoDs = anno.getDataset();
-      annoDs.getGraph().iterate().forEach(t -> {
-         dataset.getGraph().add(t);
+      Model annoDs = anno.getDataset();
+      annoDs.filter(null, null, null).stream().forEach(t -> {
+         dataset.add(t);
       });
    }
 
@@ -188,7 +188,7 @@ public class RdfPage implements Page {
       if (!preferIrisOnly) {
          throw new IllegalArgumentException("Cannot add the annotation Iri alone  if not preferIriesOnly");
       }
-      asCollection.addItem(rdfBackend.getRdf().createIRI(annoIri));
+      asCollection.addItem(SimpleValueFactory.getInstance().createIRI(annoIri));
    }
 
    @Override
@@ -215,30 +215,30 @@ public class RdfPage implements Page {
    }
 
    @Override
-   public Dataset getDataset() {
+   public Model getDataset() {
       return dataset;
    }
 
    private class AsCollection {
       boolean isFirstItem;
       boolean isClosed;
-      BlankNode lastNode;
-      private Graph graph;
+      BNode lastNode;
+      private Model graph;
 
-      public AsCollection(Graph graph, IRI iri) {
+      public AsCollection(Model graph, IRI iri) {
          this.isFirstItem = true;
          this.isClosed = false;
          this.graph = graph;
-         lastNode = rdfBackend.getRdf().createBlankNode();
+         lastNode = SimpleValueFactory.getInstance().createBNode();
          graph.add(iri, AsVocab.items, lastNode);
       }
 
-      public void addItem(BlankNodeOrIRI blankNodeOrIRI) {
+      public void addItem(Resource blankNodeOrIRI) {
          if (isClosed) {
             throw new RuntimeException("AsCollection is already closed. It is not allowed to add more Items");
          }
          if (!isFirstItem) {
-            BlankNode nextNode = rdfBackend.getRdf().createBlankNode();
+            BNode nextNode = SimpleValueFactory.getInstance().createBNode();
             graph.add(lastNode, RdfVocab.rest, nextNode);
             lastNode = nextNode;
          } else {
