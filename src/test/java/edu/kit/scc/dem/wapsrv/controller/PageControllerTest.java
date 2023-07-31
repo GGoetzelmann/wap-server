@@ -3,8 +3,8 @@ package edu.kit.scc.dem.wapsrv.controller;
 import static edu.kit.scc.dem.wapsrv.controller.ControllerTestHelper.checkException;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
-import org.apache.commons.rdf.api.Dataset;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.rdf4j.model.Model;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -210,7 +210,7 @@ class PageControllerTest extends BasicWapControllerTest {
          }
 
          @Override
-         public Dataset getDataset() {
+         public Model getDataset() {
             return null;
          }
       };

@@ -16,7 +16,7 @@ import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import org.apache.commons.rdf.api.Dataset;
+import org.eclipse.rdf4j.model.Model;
 import org.junit.jupiter.api.Tag;
 import org.springframework.context.ApplicationContext;
 import edu.kit.scc.dem.wapsrv.app.ConfigurationKeys;
@@ -353,6 +353,7 @@ public abstract class AbstractRestTest {
     protected int getTotalFromServer(String path) {
         RequestSpecification request = RestAssured.given();
         Response response = request.get(path);
+        System.out.println(response.body().prettyPrint());
         return Integer.parseInt(response.then().extract().path("total"));
     }
 
@@ -798,7 +799,7 @@ public abstract class AbstractRestTest {
             return jsonLd;
         }
         String expanded = getJsonLdProfileRegistry().expandJsonLd(jsonLd);
-        Dataset dataset = rdfBackend.readFromString(expanded, Format.JSON_LD);
+        Model dataset = rdfBackend.readFromString(expanded, Format.JSON_LD);
         return rdfBackend.getOutput(dataset, format);
     }
 

@@ -6,10 +6,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.IRI;
+import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.rdf4j.model.Model;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -820,21 +819,21 @@ class ContainerControllerTest extends BasicWapControllerTest {
       // or any other test. All we need is a container that can be formatted by the formatter
       return new Container() {
          @Override
-         public Dataset getDataset() {
+         public Model getDataset() {
             return null;
          }
 
          @Override
-         public BlankNodeOrIRI getIri() {
+         public IRI getIri() {
             return null;
          }
 
          @Override
-         public void setIri(BlankNodeOrIRI iri) {
+         public void setIri(IRI iri) {
          }
 
          @Override
-         public void setIri(BlankNodeOrIRI iri, boolean copyVia) {
+         public void setIri(IRI iri, boolean copyVia) {
          }
 
          @Override

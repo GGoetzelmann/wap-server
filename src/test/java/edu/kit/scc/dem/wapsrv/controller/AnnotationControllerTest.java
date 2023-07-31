@@ -4,10 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.IRI;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -391,21 +390,21 @@ class AnnotationControllerTest extends BasicWapControllerTest {
       // we do not need an actual annotation here. Just needed is an annotation that can be formatted
       return new Annotation() {
          @Override
-         public Dataset getDataset() {
+         public Model getDataset() {
             return null;
          }
 
          @Override
-         public BlankNodeOrIRI getIri() {
+         public IRI getIri() {
             return null;
          }
 
          @Override
-         public void setIri(BlankNodeOrIRI iri) {
+         public void setIri(IRI iri) {
          }
 
          @Override
-         public void setIri(BlankNodeOrIRI iri, boolean copyVia) {
+         public void setIri(IRI iri, boolean copyVia) {
          }
 
          @Override

@@ -22,7 +22,7 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Seq;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.riot.RDFFormat;
-import org.apache.jena.system.JenaSystem;
+import org.apache.jena.sys.JenaSystem;
 import org.apache.jena.tdb2.TDB2Factory;
 import org.apache.jena.util.ResourceUtils;
 import org.apache.jena.vocabulary.DCTerms;
@@ -186,7 +186,7 @@ public class ApacheJenaTests {
         dataBase.begin(ReadWrite.WRITE);
         // generate root container:
         Model containerRootModel = ModelFactory.createDefaultModel();
-        Resource basicContainer = containerRootModel.createResource(LdpVocab.basicContainer.getIRIString());
+        Resource basicContainer = containerRootModel.createResource(LdpVocab.basicContainer.stringValue());
         String rootContString = "http://www.test.de/wap/";
         Resource containerRoot = containerRootModel.createResource(rootContString, basicContainer);
         Seq rootContSeq = containerRootModel.createSeq(Container.toContainerSeqIriString(containerRoot.getURI()));

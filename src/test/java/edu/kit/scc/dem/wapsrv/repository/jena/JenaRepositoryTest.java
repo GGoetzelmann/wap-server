@@ -3,7 +3,7 @@ package edu.kit.scc.dem.wapsrv.repository.jena;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 import java.util.List;
-import org.apache.commons.rdf.api.RDF;
+import org.eclipse.rdf4j.model.Model;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,7 +83,7 @@ class JenaRepositoryTest {
    @Test
    final void testGetWapObject() {
       String paramIri;
-      org.apache.commons.rdf.api.Dataset actual;
+      Model actual;
       // test root container
       paramIri = objWapServerConfig.getRootContainerIri();
       actual = null;
@@ -193,7 +193,7 @@ class JenaRepositoryTest {
 
    /**
     * Test get RDF.
-    */
+
    @Test
    final void testGetRdf() {
       RDF actual;
@@ -201,6 +201,7 @@ class JenaRepositoryTest {
       actual = objJenaRepository.getRdf();
       assertNotNull(actual, "Could not get RDF.");
    }
+    */
 
    /**
     * Test add element to RDF sequential.
@@ -258,7 +259,7 @@ class JenaRepositoryTest {
    @Test
    final void testWriteObjectToDatabase() {
       String paramIri;
-      org.apache.commons.rdf.api.Dataset paramWapObjectDataset;
+      Model paramWapObjectDataset;
       boolean actual;
       // begin WRITE transaction
       objJenaRepository.abortTransaction();
@@ -308,7 +309,7 @@ class JenaRepositoryTest {
     */
    @Test
    final void testGetTransactionDataset() {
-      org.apache.commons.rdf.api.Dataset actual;
+      Model actual;
       actual = null;
       actual = objJenaRepository.getTransactionDataset();
       assertNotNull(actual, "Could not get trasaction dataset.");

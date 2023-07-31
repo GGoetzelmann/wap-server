@@ -1,7 +1,8 @@
 package edu.kit.scc.dem.wapsrv.model;
 
 import static org.junit.jupiter.api.Assertions.*;
-import org.apache.commons.rdf.api.IRI;
+
+import org.eclipse.rdf4j.model.IRI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

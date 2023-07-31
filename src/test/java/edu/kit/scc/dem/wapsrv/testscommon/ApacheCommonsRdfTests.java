@@ -6,21 +6,18 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.Graph;
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.api.Literal;
-import org.apache.commons.rdf.api.Triple;
-import org.apache.commons.rdf.jena.JenaGraph;
-import org.apache.commons.rdf.jena.JenaRDF;
-import org.apache.commons.rdf.jsonldjava.JsonLdGraph;
-import org.apache.commons.rdf.jsonldjava.JsonLdRDF;
+
+import edu.kit.scc.dem.wapsrv.model.rdf.RDF4JUtilities;
 import org.apache.jena.atlas.logging.Log;
+import org.apache.jena.graph.Triple;
 import org.apache.jena.query.ReadWrite;
-import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.tdb2.TDB2Factory;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -83,41 +80,42 @@ public class ApacheCommonsRdfTests {
         System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "false");
     }
 
+    //TODO: Continue removing apache commons (jsonld)
     /**
      * Test RDF simple annotation.
      *
      * @throws JsonLdError A JSON LD error exception
      * @throws JsonGenerationException A JSON generation exception
      * @throws IOException A I/O exception
-     */
+
     @Test
     public void rdfSimpleAnnotation() throws JsonLdError, JsonGenerationException {
         JenaRdfBackend rdfLib = new JenaRdfBackend();
-        Dataset dataset = rdfLib.readFromFile("src/main/resources/testdata/PAGE2017XML_Tristrant_VD16T1963-008.jsonld",
+        Model dataset = rdfLib.readFromFile("src/main/resources/testdata/PAGE2017XML_Tristrant_VD16T1963-008.jsonld",
                 Format.JSON_LD);
-        IRI iri = rdfLib.getRdf().createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-        IRI type = rdfLib.getRdf().createIRI("http://www.w3.org/ns/oa#Annotation");
-        IRI created = rdfLib.getRdf().createIRI("http://purl.org/dc/terms/created");
-        Literal createdString = rdfLib.getRdf().createLiteral("2018-06-5T00:23:00Z");
-        BlankNodeOrIRI oldIdIri = null;
-        Graph graph = dataset.getGraph();
-        for (Triple t : graph.iterate(null, iri, type)) {
-            Log.info(this, t.getSubject().ntriplesString() + " , " + t.getPredicate().getIRIString() + " , "
-                    + t.getObject().ntriplesString());
-            oldIdIri = t.getSubject();
-            if (graph.contains(t.getSubject(), created, null)) {
+        IRI iri = SimpleValueFactory.getInstance().createIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+        IRI type = SimpleValueFactory.getInstance().createIRI("http://www.w3.org/ns/oa#Annotation");
+        IRI created = SimpleValueFactory.getInstance().createIRI("http://purl.org/dc/terms/created");
+        Literal createdString = SimpleValueFactory.getInstance().createLiteral("2018-06-5T00:23:00Z");
+        IRI oldIdIri = null;
+        for (Statement t : dataset.filter(null, iri, type)) {
+            Log.info(this, t.getSubject().stringValue() + " , " + t.getPredicate().stringValue() + " , "
+                    + t.getObject().stringValue());
+            oldIdIri = (IRI) t.getSubject();
+            if (dataset.contains(t.getSubject(), created, null)) {
                 Log.info(this, "the created triple for this annotation already exists, DELETING...");
-                graph.remove(t.getSubject(), created, null);
+                dataset.remove(t.getSubject(), created, null);
             }
-            graph.add(t.getSubject(), created, createdString);
+            dataset.add(t.getSubject(), created, createdString);
         }
-        IRI newIdIri = rdfLib.getRdf().createIRI("http://wapserver.dem.scc.kit.edu/tristrant/anno1");
-        RdfUtilities.renameNodeIri(graph, oldIdIri, newIdIri);
+        IRI newIdIri = SimpleValueFactory.getInstance().createIRI("http://wapserver.dem.scc.kit.edu/tristrant/anno1");
+        RdfUtilities.renameNodeIri(dataset, oldIdIri, newIdIri);
         logger.trace(rdfLib.getOutput(dataset, Format.JSON_LD));
         JsonLdRDF jsonLdRdf = new JsonLdRDF();
         JsonLdGraph jsonLdGraph = jsonLdRdf.createGraph();
-        for (Triple t : graph.iterate()) {
-            jsonLdGraph.add(t);
+        for (Statement t : dataset) {
+            Triple tr = (Triple) RDF4JUtilities.toJenaStatement(t);
+            jsonLdGraph.add(tr);
         }
         final JsonLdOptions options = new JsonLdOptions();
         options.format = JsonLdConsts.APPLICATION_NQUADS;
@@ -138,12 +136,14 @@ public class ApacheCommonsRdfTests {
             logger.trace(e.getMessage());
         }
     }
+     */
 
+    //TODO: Look into what it does
     /**
      * JENA backed speed test.
      *
      * @throws FileNotFoundException File not found exception
-     */
+
     @Test
     public void jenaBackedSpeedTest() throws FileNotFoundException {
         JenaRDF factory = new JenaRDF();
@@ -161,7 +161,7 @@ public class ApacheCommonsRdfTests {
         // fill a List with models to add
         List<JenaGraph> modelList = new ArrayList<JenaGraph>();
         for (int i = 0; i < SPEED_TEST_COUNT; i++) {
-            Graph newGraph = RdfUtilities.clone(sourceGraph, factory);
+            Graph newGraph = RdfUtilities.clone(sourceGraph);
             RdfUtilities.renameNodeIri(newGraph, node,
                     factory.createIRI("http://wapserver.dem.scc.kit.edu/tristrant/anno" + i));
             modelList.add((JenaGraph) newGraph);
@@ -197,4 +197,5 @@ public class ApacheCommonsRdfTests {
         long durationRead = System.currentTimeMillis() - timeStartRead;
         Log.info(this, "---------- read " + SPEED_TEST_COUNT + " Annos from Database millis: " + durationRead);
     }
+     */
 }

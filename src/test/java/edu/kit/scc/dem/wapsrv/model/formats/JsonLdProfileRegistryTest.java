@@ -55,7 +55,7 @@ class JsonLdProfileRegistryTest {
     private Properties initialPropsHidden;
 
     @BeforeEach
-    private void initConfig() {
+    public void initConfig() {
         Properties props = WapServerConfig.getDefaultProperties();
         props.setProperty(ConfigurationKeys.JsonLdProfileFolder.toString(), TEST_FOLDER);
         props.setProperty(ConfigurationKeys.JsonLdCachedProfileValidityInMs.toString(), CACHE_VALIDITY + "");

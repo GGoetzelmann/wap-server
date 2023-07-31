@@ -2,9 +2,6 @@ package edu.kit.scc.dem.wapsrv.testscommon;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import java.util.Calendar;
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.jena.JenaDataset;
-import org.apache.commons.rdf.jena.JenaRDF;
 import org.apache.jena.query.Dataset;
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Model;
@@ -13,6 +10,9 @@ import org.apache.jena.rdf.model.Resource;
 import org.apache.jena.rdf.model.Seq;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.rdf.model.StmtIterator;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.hamcrest.core.Is;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
@@ -92,12 +92,12 @@ public class TestJenaRespository {
         // fill database with some test data
         Model modelRootContainer = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
         modelRootContainer.createResource(rootContainerIri,
-                modelRootContainer.createResource(LdpVocab.basicContainer.getIRIString()));
+                modelRootContainer.createResource(LdpVocab.basicContainer.stringValue()));
         modelRootContainer.addLiteral(modelRootContainer.getResource(rootContainerIri),
-                modelRootContainer.createProperty(WapVocab.etag.getIRIString()),
+                modelRootContainer.createProperty(WapVocab.etag.stringValue()),
                 modelRootContainer.createLiteral("INITIAL-ROOT-ETAG"));
         modelRootContainer.addLiteral(modelRootContainer.getResource(rootContainerIri),
-                modelRootContainer.createProperty(DcTermsVocab.modified.getIRIString()),
+                modelRootContainer.createProperty(DcTermsVocab.modified.stringValue()),
                 modelRootContainer.createTypedLiteral(Calendar.getInstance()));
         // sub container
         Model mc1 = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
@@ -108,48 +108,48 @@ public class TestJenaRespository {
         String cs2 = rootContainerIri + "container2/";
         String cs3 = rootContainerIri + "container3/";
         String containerDelectedString = rootContainerIri + "containerDeleted/";
-        addTriple(mc1, cs1, RdfVocab.type.getIRIString(), LdpVocab.basicContainer.getIRIString());
-        addTriple(mc2, cs2, RdfVocab.type.getIRIString(), LdpVocab.basicContainer.getIRIString());
-        addTriple(mc3, cs3, RdfVocab.type.getIRIString(), LdpVocab.basicContainer.getIRIString());
-        mc1.addLiteral(mc1.getResource(cs1), mc1.createProperty(WapVocab.etag.getIRIString()),
+        addTriple(mc1, cs1, RdfVocab.type.stringValue(), LdpVocab.basicContainer.stringValue());
+        addTriple(mc2, cs2, RdfVocab.type.stringValue(), LdpVocab.basicContainer.stringValue());
+        addTriple(mc3, cs3, RdfVocab.type.stringValue(), LdpVocab.basicContainer.stringValue());
+        mc1.addLiteral(mc1.getResource(cs1), mc1.createProperty(WapVocab.etag.stringValue()),
                 mc1.createLiteral(etagFactory.generateEtag()));
-        mc2.addLiteral(mc2.getResource(cs2), mc2.createProperty(WapVocab.etag.getIRIString()),
+        mc2.addLiteral(mc2.getResource(cs2), mc2.createProperty(WapVocab.etag.stringValue()),
                 mc2.createLiteral("TEST-ETAG-1234"));
-        mc3.addLiteral(mc3.getResource(cs3), mc3.createProperty(WapVocab.etag.getIRIString()),
+        mc3.addLiteral(mc3.getResource(cs3), mc3.createProperty(WapVocab.etag.stringValue()),
                 mc3.createLiteral("TEST-ETAG-CONT3"));
-        mc1.addLiteral(mc1.getResource(cs1), mc1.createProperty(DcTermsVocab.modified.getIRIString()),
+        mc1.addLiteral(mc1.getResource(cs1), mc1.createProperty(DcTermsVocab.modified.stringValue()),
                 mc1.createTypedLiteral(Calendar.getInstance()));
-        mc2.addLiteral(mc2.getResource(cs2), mc2.createProperty(DcTermsVocab.modified.getIRIString()),
+        mc2.addLiteral(mc2.getResource(cs2), mc2.createProperty(DcTermsVocab.modified.stringValue()),
                 mc2.createTypedLiteral(Calendar.getInstance()));
-        mc3.addLiteral(mc3.getResource(cs3), mc3.createProperty(DcTermsVocab.modified.getIRIString()),
+        mc3.addLiteral(mc3.getResource(cs3), mc3.createProperty(DcTermsVocab.modified.stringValue()),
                 mc3.createTypedLiteral(Calendar.getInstance()));
         Resource deletedContainer = modelContainerDeleted.createResource(rootContainerIri + "containerDeleted/",
-                modelContainerDeleted.createResource(LdpVocab.basicContainer.getIRIString()));
+                modelContainerDeleted.createResource(LdpVocab.basicContainer.stringValue()));
         // put container into root container sequence
         Seq seq = modelRootContainer.createSeq(rootContainerIri + "#containers");
         seq.add(modelRootContainer.getResource(cs1));
         seq.add(modelRootContainer.getResource(cs2));
         seq.add(modelRootContainer.getResource(cs3));
-        deletedContainer.addLiteral(modelContainerDeleted.createProperty(WapVocab.deleted.getIRIString()), true);
+        deletedContainer.addLiteral(modelContainerDeleted.createProperty(WapVocab.deleted.stringValue()), true);
         // container to block a delete
         Model mcBD = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
         String csBD = rootContainerIri + "container3/bockDelete/";
-        addTriple(mcBD, csBD, RdfVocab.type.getIRIString(), LdpVocab.basicContainer.getIRIString());
-        mcBD.addLiteral(mcBD.getResource(csBD), mcBD.createProperty(WapVocab.etag.getIRIString()),
+        addTriple(mcBD, csBD, RdfVocab.type.stringValue(), LdpVocab.basicContainer.stringValue());
+        mcBD.addLiteral(mcBD.getResource(csBD), mcBD.createProperty(WapVocab.etag.stringValue()),
                 mcBD.createLiteral("TEST-ETAG-BLDE"));
-        mcBD.addLiteral(mcBD.getResource(csBD), mcBD.createProperty(DcTermsVocab.modified.getIRIString()),
+        mcBD.addLiteral(mcBD.getResource(csBD), mcBD.createProperty(DcTermsVocab.modified.stringValue()),
                 mcBD.createTypedLiteral(Calendar.getInstance()));
         Seq seqContainer3 = mc3.createSeq(Container.toContainerSeqIriString(cs3));
         seqContainer3.add(mc3.getResource(csBD));
         // annotation
         Model modelAnnotation1 = org.apache.jena.rdf.model.ModelFactory.createDefaultModel();
         String annotation1String = rootContainerIri + "container3/anno1";
-        addTriple(modelAnnotation1, annotation1String, RdfVocab.type.getIRIString(), AnnoVocab.annotation.getIRIString());
+        addTriple(modelAnnotation1, annotation1String, RdfVocab.type.stringValue(), AnnoVocab.annotation.stringValue());
         modelAnnotation1.addLiteral(modelAnnotation1.getResource(annotation1String),
-                modelAnnotation1.createProperty(WapVocab.etag.getIRIString()),
+                modelAnnotation1.createProperty(WapVocab.etag.stringValue()),
                 modelAnnotation1.createLiteral("TEST-ETAG-ANNO1"));
         modelAnnotation1.addLiteral(modelAnnotation1.getResource(annotation1String),
-                modelAnnotation1.createProperty(DcTermsVocab.modified.getIRIString()),
+                modelAnnotation1.createProperty(DcTermsVocab.modified.stringValue()),
                 modelAnnotation1.createTypedLiteral(Calendar.getInstance()));
         Seq cont3AnnoSeq = mc3.createSeq(Container.toAnnotationSeqIriString(cs3));
         cont3AnnoSeq.add(mc3.createResource(annotation1String));
@@ -239,12 +239,11 @@ public class TestJenaRespository {
     @Test
     public void testPostContainerContainerAlreadyExist() {
         dataBase.begin(ReadWrite.WRITE);
-        JenaRDF rdf = new JenaRDF();
-        JenaDataset containerDs = rdf.createDataset();
-        IRI containerNode = rdf.createIRI(rootContainerIri + "container1/");
+        org.eclipse.rdf4j.model.Model containerDs = new LinkedHashModel();
+        IRI containerNode = SimpleValueFactory.getInstance().createIRI(rootContainerIri + "container1/");
         containerDs.add(null, containerNode, RdfVocab.type, LdpVocab.basicContainer);
         containerDs.add(null, containerNode, RdfVocab.type, AsVocab.orderedCollection);
-        containerDs.add(null, containerNode, WapVocab.etag, rdf.createLiteral(etagFactory.generateEtag()));
+        containerDs.add(containerNode, WapVocab.etag, SimpleValueFactory.getInstance().createLiteral(etagFactory.generateEtag()));
         modelFactory.createContainer(containerDs);
         // Assertions.assertThrows(ResourceExistsException.class, () -> {repository.postContainer(rootContainerIri,
         // container);});

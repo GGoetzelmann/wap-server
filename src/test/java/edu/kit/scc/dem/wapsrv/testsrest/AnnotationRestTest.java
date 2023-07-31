@@ -915,9 +915,11 @@ public class AnnotationRestTest extends AbstractRestTest {
         final String annoPath = getPathFromIri(annoIri);
         final String etagBefore = getEtag(postResponse);
         final String etagBeforeFromServer = getEtagFromServer(annoPath);
-        if (!etagBefore.equals(etagBeforeFromServer)) {
-            fail("ETag in post response does not match etag in db");
-        }
+        //if (!etagBefore.equals(etagBeforeFromServer)) {
+        //    fail("ETag in post response does not match etag in db");
+        //}
+        assertEquals(etagBeforeFromServer, etagBefore,
+                "ETag in post response does not match etag in db");
         // put anno
         String annoEtag = getEtagFromServer(annoPath);
         RequestSpecification request = RestAssured.given();

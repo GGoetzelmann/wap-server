@@ -5,9 +5,12 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.rdf.api.Graph;
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.jena.JenaDataset;
+
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.sail.config.SailImplConfig;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -72,23 +75,23 @@ public class JsonldTests {
     public void formatingWithContext() throws JsonLdError, IOException {
         System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "false");
         JenaRdfBackend rdfLib = new JenaRdfBackend();
-        IRI contIri = rdfLib.getRdf().createIRI("http://localhost:8080/wap/container1/");
+        IRI contIri = SimpleValueFactory.getInstance().createIRI("http://localhost:8080/wap/container1/");
         // IRI annoIri = rdfLib.getRdf().createIRI(contIri.getIRIString() + "anno1");
         String currentDirectory;
         File file = new File(".");
         currentDirectory = file.getAbsolutePath();
         logger.trace("Current working directory : " + currentDirectory);
-        JenaDataset annoDs = (JenaDataset) rdfLib.readFromFile(
+        Model annoDs = rdfLib.readFromFile(
                 currentDirectory + "/src/main/resources/testdata/annotations/example21.jsonld", Format.JSON_LD);
-        annoDs.getGraph().iterate().forEach(t -> {
-            logger.trace(t.getSubject().ntriplesString() + " " + t.getPredicate().ntriplesString() + " "
-                    + t.getObject().ntriplesString());
+        annoDs.filter(null, null, null).stream().forEach(t -> {
+            logger.trace(t.getSubject().stringValue() + " " + t.getPredicate().stringValue() + " "
+                    + t.getObject().stringValue());
         });
         String jenaOutput = rdfLib.getOutput(annoDs, Format.NQUADS);
         logger.trace("**** Jena Output:  " + jenaOutput);
         // JsonLdProfileRegistry profileRegistry = JsonLdProfileRegistry.getInstance();
         // JsonLdOptions options = profileRegistry.getJsonLdOptions();
-        Graph contGraph = rdfLib.getRdf().createGraph();
+        Model contGraph = new LinkedHashModel();
         contGraph.add(contIri, RdfVocab.type, LdpVocab.basicContainer);
         Object jsonObject = JsonLdProcessor.fromRDF(jenaOutput);
         final JsonLdOptions options = new JsonLdOptions();

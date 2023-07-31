@@ -72,10 +72,11 @@ class AnnotationListTest {
       AnnotationList annoList = createAnnotationList(1);
       Annotation anno = annoList.getAnnotations().get(0);
       annoList.setContainerIri("http://www.example.org/container1/");
-      assertEquals(anno.getIri().toString(), annoList.getIri().toString(), "The IRI equals not the expected string");
+      assertEquals(anno.getIri().stringValue(), annoList.getIri().stringValue(), "The IRI equals not the expected string");
       annoList = createAnnotationList(2);
       annoList.setContainerIri("http://www.example.org/container1/");
-      assertEquals("<http://www.example.org/container1/>", annoList.getIri().toString(),
+      //Note: tested for string with brackets before, not sure if it makes a difference
+      assertEquals("http://www.example.org/container1/", annoList.getIri().stringValue(),
             "The IRI equals not the expected string");
    }
 

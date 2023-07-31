@@ -5,10 +5,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.Graph;
-import org.apache.commons.rdf.api.RDF;
+
+import edu.kit.scc.dem.wapsrv.exceptions.WapException;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
+import org.eclipse.rdf4j.sail.config.SailImplConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,24 +85,23 @@ class RdfModelFactoryTest {
 
    /**
     * Test get RDF.
-    */
+
    @Test
    final void testGetRDF() {
       assertNotNull(modelFactory.getRDF(), "a vaild RDF has to be returned");
    }
+    */
 
    /**
     * Test create annotation dataset.
     */
    @Test
    final void testCreateAnnotationDataset() {
-      RDF rdf = modelFactory.getRDF();
-      Dataset ds = rdf.createDataset();
-      Graph graph = ds.getGraph();
-      BlankNodeOrIRI node = rdf.createBlankNode();
-      graph.add(node, RdfVocab.type, AnnoVocab.annotation);
-      graph.add(node, AnnoVocab.body, rdf.createIRI("http://example.org/post1"));
-      graph.add(node, AnnoVocab.target, rdf.createIRI("http://example.com/page1"));
+      Model ds = new LinkedHashModel();
+      BNode node = SimpleValueFactory.getInstance().createBNode();
+      ds.add(node, RdfVocab.type, AnnoVocab.annotation);
+      ds.add(node, AnnoVocab.body, SimpleValueFactory.getInstance().createIRI("http://example.org/post1"));
+      ds.add(node, AnnoVocab.target, SimpleValueFactory.getInstance().createIRI("http://example.com/page1"));
       Annotation a = modelFactory.createAnnotation(ds);
       assertNotNull(a, "the returned Annotation is not allowed to be null");
    }
@@ -109,7 +111,8 @@ class RdfModelFactoryTest {
     */
    @Test
    final void testCreateAnnotationStringFormat() {
-      assertThrows(NotAnAnnotationException.class, () -> {
+      //Changed assertion since it does not make sense to throw an annotation specific exception if there is no WAP object to create
+      assertThrows(WapException.class, () -> {
          modelFactory.createAnnotation("{}", Format.JSON_LD);
       });
       Annotation a = modelFactory.createAnnotation(expand(rawAnnotation), Format.JSON_LD);

@@ -5,9 +5,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import java.util.Calendar;
-import org.apache.commons.rdf.api.Dataset;
-import org.apache.commons.rdf.api.IRI;
-import org.apache.commons.rdf.simple.SimpleRDF;
+
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.impl.EmptyModel;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -77,18 +81,19 @@ class AbstractWapServiceTest{
   @SuppressWarnings("unused")
   @Autowired
   private EtagFactory etagFactoryMock;
-  private SimpleRDF simpleRDF;
-  private Dataset dataset;
+  private Model dataset;
 
   @Autowired
   private void setWapService(ContainerServiceImpl containerService){
     this.wapObjectService = containerService;
   }
 
+  //TODO: Check and update
   /**
    * Setup test.
    */
   @BeforeEach
+  /**
   void setupTest(){
     simpleRDF = new SimpleRDF();
     dataset = simpleRDF.createDataset();
@@ -110,6 +115,32 @@ class AbstractWapServiceTest{
     when(pageMock.getContainerIri()).thenReturn(ROOT_IRI);
     Dataset pageDataset = simpleRDF.createDataset();
     pageDataset.getGraph().add(root, WapVocab.deleted, WapVocab.deleted);
+    when(pageMock.getDataset()).thenReturn(pageDataset);
+  }*/
+
+  void setupTest(){
+    ValueFactory valueFactory = SimpleValueFactory.getInstance();
+
+    // Create an RDF model to hold the triples
+    dataset = new LinkedHashModel();
+
+    IRI root = valueFactory.createIRI(ROOT_IRI);
+    dataset.add(root, RdfVocab.type, LdpVocab.basicContainer);
+    dataset.add(root, DcTermsVocab.modified,
+            RdfUtilities.rdfLiteralFromCalendar(Calendar.getInstance()));
+    dataset.add(root, RdfSchemaVocab.label, valueFactory.createLiteral("label"));
+    dataset.add(root, WapVocab.etag, valueFactory.createLiteral("test etag"));
+    when(wapObjectRepository[0].getTransactionDataset()).thenReturn(dataset);
+    when(wapObjectRepository[0].getWapObject(ROOT_IRI)).thenReturn(dataset);
+    when(modelFactoryMock.createContainer(any(Model.class), any(boolean.class), any(boolean.class)))
+            .thenReturn(mock(Container.class));
+    when(wapServerConfigMock.getPageSize()).thenReturn(10);
+    Page pageMock = mock(Page.class);
+    when(modelFactoryMock.createPage(any(Model.class), eq(ROOT_IRI), eq(0), any(boolean.class), any(boolean.class),
+            any(int.class), any(String.class), eq("label"))).thenReturn(pageMock);
+    when(pageMock.getContainerIri()).thenReturn(ROOT_IRI);
+    Model pageDataset = new LinkedHashModel();
+    pageDataset.add(root, WapVocab.deleted, WapVocab.deleted);
     when(pageMock.getDataset()).thenReturn(pageDataset);
   }
 

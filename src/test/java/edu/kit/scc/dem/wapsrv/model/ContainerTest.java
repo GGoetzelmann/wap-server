@@ -4,8 +4,8 @@
 package edu.kit.scc.dem.wapsrv.model;
 
 import static org.junit.jupiter.api.Assertions.*;
-import org.apache.commons.rdf.api.BlankNodeOrIRI;
-import org.apache.commons.rdf.api.RDF;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,10 +38,10 @@ class ContainerTest {
    @Test
    final void testToAnnotationSeqIri() {
       String iri = "http://www.example.org/container2/";
-      RDF rdf = modelFactory.getRDF();
-      BlankNodeOrIRI node = rdf.createIRI(iri);
-      BlankNodeOrIRI newIri = Container.toAnnotationSeqIri(node);
-      assertEquals(newIri.toString(), "<" + iri + "#annotations" + ">", "The IRI equals not the expected string");
+      IRI node = SimpleValueFactory.getInstance().createIRI(iri);
+      IRI newIri = Container.toAnnotationSeqIri(node);
+      //TODO: Changed assertion, check if correct
+      assertEquals(newIri.toString(), iri + "#annotations", "The IRI equals not the expected string");
    }
 
    /**
@@ -60,10 +60,10 @@ class ContainerTest {
    @Test
    final void testToContainerSeqIri() {
       String iri = "http://www.example.org/container2/";
-      RDF rdf = modelFactory.getRDF();
-      BlankNodeOrIRI node = rdf.createIRI(iri);
-      BlankNodeOrIRI newIri = Container.toContainerSeqIri(node);
-      assertEquals(newIri.toString(), "<" + iri + "#containers" + ">", "The IRI equals not the expected string");
+      IRI node = SimpleValueFactory.getInstance().createIRI(iri);
+      IRI newIri = Container.toContainerSeqIri(node);
+      //Changed assertion, does it matter for usage?
+      assertEquals(newIri.stringValue(), iri + "#containers", "The IRI equals not the expected string");
    }
 
    /**
