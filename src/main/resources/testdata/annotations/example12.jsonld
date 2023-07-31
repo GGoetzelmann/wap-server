@@ -8,7 +8,7 @@
     "value": "important"
   },
   "target": {
-    "type": "List",
+    "type": "oa:List",
     "items": [
       "http://example.com/book/page1",
       "http://example.com/book/page2",

@@ -43,7 +43,7 @@
           "purpose": "describing",
           "source": {
             "id": "http://example.org/comment1",
-            "type": "Sound",
+            "type": "dcterms:Sound",
             "format": "audio/mpeg",
             "language": "de",
             "creator": {

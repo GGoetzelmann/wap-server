@@ -8,7 +8,7 @@
     "value": "These pages together provide evidence of the conspiracy"
   },
   "target": {
-    "type": "Composite",
+    "type": "oa:Composite",
     "items": [
       "http://example.com/page1",
       "http://example.org/page6",

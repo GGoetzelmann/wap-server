@@ -5,7 +5,7 @@
   "motivation": "classifying",
   "body": "http://example.org/vocab/art/portrait",
   "target": {
-    "type": "Independents",
+    "type": "oa:Independents",
     "items": [
       "http://example.com/image1",
       "http://example.net/image2",
