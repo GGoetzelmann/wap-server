@@ -54,15 +54,26 @@ public abstract class RdfWapObject implements WapObject {
       }
       this.dataset = dataset;
       this.rdfBackend = rdfBackend;
-      //TODO: Check why the iri was never set before and it somehow still worked
-      Resource possibleIRI = dataset.subjects().iterator().next();
-      this.iri = possibleIRI;
 
+      Model typeStatements = dataset.filter(null, RdfVocab.type, null);
+      //Get the IRI from the statements. potentially dangerous to do so
+      //TODO: move somewhere and make more robust?
+      for (Statement tStatement : typeStatements) {
+         if(tStatement.getObject().isIRI() && tStatement.getObject().equals(RdfVocab.seq)) continue;
+         if(tStatement.getObject().isIRI() && tStatement.getObject().stringValue().equals("http://www.w3.org/ns/activitystreams#OrderedCollectionPage")) continue;
+         Resource typeSubject = tStatement.getSubject();
+         //Triple is describing a type and the subject is 'top level' - not object of any triple.
+         if(!dataset.filter(null, null, typeSubject).stream().anyMatch(element -> true)) {
+            this.iri = typeSubject;
+            break;
+         }
+      }
       // Extract ETag and remove from data set.
-      Optional<? extends Statement> etagTriple = dataset.filter(iri, WapVocab.etag, null).stream().findFirst();
+      Optional<? extends Statement> etagTriple = dataset.filter(null, WapVocab.etag, null).stream().findFirst();
       if (etagTriple.isPresent()) {
          etag = RdfUtilities.nStringToString(etagTriple.get().getObject().stringValue());
-         dataset.remove(iri, WapVocab.etag, null);
+         Resource etagSubject = etagTriple.get().getSubject();
+         dataset.remove(etagSubject, WapVocab.etag, null);
       } else {
          // Set eTag null -> to be handled in Repository
          etag = null;
