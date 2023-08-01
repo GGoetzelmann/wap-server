@@ -53,7 +53,6 @@ public class RdfOutputContainer extends RdfContainer {
    @Override
    public Model getDataset() {
       // Because the sequence head is also included we need to substract 1
-      IRI schnitzelIRI = getIri();
       long annoCount = dataset.filter(Container.toAnnotationSeqIri(getIri()), null, null).stream().count() - 1;
       Literal annoCountLiteral
             = SimpleValueFactory.getInstance().createLiteral(String.valueOf(annoCount), XSD.NON_NEGATIVE_INTEGER);
