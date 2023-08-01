@@ -92,9 +92,10 @@ public class JenaRepository extends CollectedRepository {
             throw new NotExistentException("the requested container does not exist");
         }
         Model readModel = dataBase.getNamedModel(iri);
+        HashMap<Resource, org.eclipse.rdf4j.model.Resource> bnodeMapping = new HashMap<>();
         readModel.listStatements().forEachRemaining(s -> {
             //s.asJenaDatasetGraph().getDefaultGraph().add(s.asTriple());
-            retDs.add(RDF4JUtilities.toRDF4JStatement(s));
+            retDs.add(RDF4JUtilities.toRDF4JStatement(s, bnodeMapping));
         });
         return retDs;
     }
@@ -245,9 +246,10 @@ public class JenaRepository extends CollectedRepository {
         dataBase.listNames().forEachRemaining(graphName -> {
             Model jenaModel = dataBase.getNamedModel(graphName);
             StmtIterator iterator = jenaModel.listStatements();
+            HashMap<Resource, org.eclipse.rdf4j.model.Resource> bnodeMap = new HashMap<>();
             while (iterator.hasNext()) {
                 Statement jenaStatement = iterator.nextStatement();
-                org.eclipse.rdf4j.model.Statement stat = RDF4JUtilities.toRDF4JStatement(jenaStatement);
+                org.eclipse.rdf4j.model.Statement stat = RDF4JUtilities.toRDF4JStatement(jenaStatement, bnodeMap);
                 org.eclipse.rdf4j.model.Resource subject = stat.getSubject();
                 org.eclipse.rdf4j.model.IRI predicate = stat.getPredicate();
                 org.eclipse.rdf4j.model.Value object = stat.getObject();

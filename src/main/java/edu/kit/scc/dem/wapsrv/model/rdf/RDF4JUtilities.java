@@ -63,7 +63,7 @@ public class RDF4JUtilities {
                     object = bnodeMapping.get(rdf4jstatement.getObject().stringValue());
                 } else {
                     object = jenaModel.createResource();
-                    bnodeMapping.put(rdf4jstatement.getObject().stringValue(), subject);
+                    bnodeMapping.put(rdf4jstatement.getObject().stringValue(), (Resource) object);
                 }
             }
         }
@@ -72,15 +72,24 @@ public class RDF4JUtilities {
         return jenaStatement;
     }
 
-    //TODO: Same thing as the other way round. Bnode mapping needed?
     public static Statement toRDF4JStatement(org.apache.jena.rdf.model.Statement jenaStatement) {
+        return toRDF4JStatement(jenaStatement, new HashMap<Resource, org.eclipse.rdf4j.model.Resource>());
+    }
+    //TODO: Same thing as the other way round. Bnode mapping needed?
+    public static Statement toRDF4JStatement(org.apache.jena.rdf.model.Statement jenaStatement, HashMap<Resource, org.eclipse.rdf4j.model.Resource> bnodeMapping) {
 
         org.eclipse.rdf4j.model.Resource subject;
         Resource jenaSubject = jenaStatement.getSubject().asResource();
         if (!jenaSubject.isAnon()) {
             subject = SimpleValueFactory.getInstance().createIRI(jenaSubject.getURI());
         } else {
-            subject = SimpleValueFactory.getInstance().createBNode();
+            if(bnodeMapping.containsKey(jenaSubject)){
+                subject = bnodeMapping.get(jenaSubject);
+            } else {
+                subject = SimpleValueFactory.getInstance().createBNode();
+                bnodeMapping.put(jenaSubject, subject);
+            }
+
         }
         IRI predicate = SimpleValueFactory.getInstance().createIRI(jenaStatement.getPredicate().getURI());
         Value object;
@@ -93,7 +102,12 @@ public class RDF4JUtilities {
             if (!jenaobject.isAnon()) {
                 object = SimpleValueFactory.getInstance().createIRI(jenaobject.getURI());
             } else {
-                object = SimpleValueFactory.getInstance().createBNode();
+                if(bnodeMapping.containsKey(jenaobject)){
+                    object = bnodeMapping.get(jenaobject);
+                } else {
+                    object = SimpleValueFactory.getInstance().createBNode();
+                    bnodeMapping.put(jenaobject, (org.eclipse.rdf4j.model.Resource) object);
+                }
             }
 
         }
