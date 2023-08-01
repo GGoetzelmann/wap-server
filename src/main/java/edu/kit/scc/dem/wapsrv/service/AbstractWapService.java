@@ -370,7 +370,7 @@ public abstract class AbstractWapService implements WapService {
          ds.add(node, DcTermsVocab.modified, modifiedLiteral);
          //Write update to db
          Statement newModTriple = SimpleValueFactory.getInstance().createStatement(node, DcTermsVocab.modified, modifiedLiteral);
-         if (etagTriple != null) {
+         if (modTriple != null) {
             repository.updateTriple(node.stringValue(), modTriple, newModTriple);
          } else {
             repository.updateTriple(node.stringValue(), newModTriple, newModTriple);
