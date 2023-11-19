@@ -24,6 +24,7 @@ import edu.kit.scc.dem.wapsrv.testscommon.TestDataStore;
 import static edu.kit.scc.dem.wapsrv.controller.ControllerTestHelper.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Tests the class JsonLdProfileRegistry
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {WapServerConfig.class})
+@ActiveProfiles("test")
 class JsonLdProfileRegistryTest {
 
     private static final Logger logger = LoggerFactory.getLogger(JsonLdProfileRegistryTest.class);
@@ -343,7 +345,8 @@ class JsonLdProfileRegistryTest {
         final Type type = Type.PAGE;
         Properties props = getInitialProps();
         props.setProperty(ConfigurationKeys.JsonLdFrameFolder.toString(), "nonExistentFolder");
-        config.updateConfig(props);
+        WapServerConfig.getInstance().updateConfig(props);
+        //config.updateConfig(props);
         checkException(InternalServerException.class, "Could not load JSON-LD Frame file for " + type, () -> {
             JsonLdProfileRegistry instance = getJsonLdProfileRegistry();
             instance.getFrameString(type);
