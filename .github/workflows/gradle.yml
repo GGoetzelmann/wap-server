@@ -5,7 +5,7 @@ name: build with gradle
 
 on:
   push:
-    branches: [ main, development ]
+    branches: [ ]
   pull_request:
     branches: [ main ]
 
