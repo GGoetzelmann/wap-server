@@ -6,12 +6,17 @@ plugins {
     id "org.owasp.dependencycheck" version "7.3.0"
     id 'org.asciidoctor.jvm.convert' version '3.3.2'
     id "net.researchgate.release" version "3.0.2"
-    //id "com.gorylenko.gradle-git-properties" version "2.4.1" //requires git repo (?)
+    id "com.gorylenko.gradle-git-properties" version "2.4.1"
     id 'java'
     id 'jacoco'
 }
 
 apply plugin: 'project-report'
+
+//make sure that git properties plugin does not fail on build, for example in docker environments without access to the git repo information
+gitProperties {
+    failOnNoGitDirectory = false
+}
 
 jar {
     archiveBaseName = 'wap-server'
