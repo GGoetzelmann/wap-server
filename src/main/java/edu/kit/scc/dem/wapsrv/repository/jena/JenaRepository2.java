@@ -6,13 +6,16 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.PostConstruct;
+
+import edu.kit.scc.dem.wapsrv.model.Annotation;
+import edu.kit.scc.dem.wapsrv.model.ModelFactory;
+import edu.kit.scc.dem.wapsrv.repository.util.QueryBuilder;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.jena.commonsrdf.JenaCommonsRDF;
 import org.apache.jena.commonsrdf.JenaRDF;
 import org.apache.jena.commonsrdf.impl.JenaDataset;
 import org.apache.jena.graph.Graph;
-import org.apache.jena.query.Dataset;
-import org.apache.jena.query.ReadWrite;
+import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.tdb2.DatabaseMgr;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +27,8 @@ import edu.kit.scc.dem.wapsrv.model.ext.SequenceResource;
 import edu.kit.scc.dem.wapsrv.model.rdf.RdfBackend;
 import edu.kit.scc.dem.wapsrv.repository.CollectedRepository;
 import edu.kit.scc.dem.wapsrv.repository.TransactionRepository;
+
+import java.util.Map;
 import java.util.Optional;
 import org.apache.jena.sparql.core.Transactional;
 import org.slf4j.Logger;
@@ -76,6 +81,9 @@ public class JenaRepository2 extends CollectedRepository{
    */
   @Autowired
   private RdfBackend rdfBackend;
+
+  @Autowired
+  protected ModelFactory modelFactory;
 
   /**
    * Sets the configuration to use
@@ -254,5 +262,32 @@ public class JenaRepository2 extends CollectedRepository{
     List<SequenceResource> res = iSequenceDao.findBySequenceIriEquals(seqIri);
     log.trace("Removing {} resource IRI(s).", res.size());
     iSequenceDao.deleteAll(res);
+  }
+
+  @Override
+  public List<Annotation> getAnnotationsByWADMPropertyValues(Map<String, String> propertyValues) {
+    Query query = QueryBuilder.buildBasicQuery();
+    for (Map.Entry<String, String> pair : propertyValues.entrySet()) {
+      QueryBuilder.appendQueryForPropertyValue(query, pair.getKey(), pair.getValue());
+    }
+    ResultSet results = executeQuery(query);
+
+    List<Annotation> annos = new ArrayList<>();
+
+    if (!results.hasNext()) return null;
+
+    while (results.hasNext()) {
+      QuerySolution soln = results.next();
+      String annoIRI = soln.get("g").asResource().getURI();
+      Annotation anno = modelFactory.createAnnotation(getWapObject(annoIRI));
+      annos.add(anno);
+    }
+    //AnnotationList annoList = modelFactory.createAnnotationList("[" + String.join(",", annoStrings) + "]", Format.JSON_LD);
+    return annos;
+  }
+
+  private ResultSet executeQuery(Query query) {
+    QueryExecution qexec = QueryExecutionFactory.create(query, getDataBase().asDatasetGraph());
+    return qexec.execSelect();
   }
 }

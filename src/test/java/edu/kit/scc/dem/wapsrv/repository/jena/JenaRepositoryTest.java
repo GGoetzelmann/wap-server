@@ -2,7 +2,14 @@ package edu.kit.scc.dem.wapsrv.repository.jena;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
+
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+
+import edu.kit.scc.dem.wapsrv.model.Annotation;
+import edu.kit.scc.dem.wapsrv.model.ModelFactory;
+import edu.kit.scc.dem.wapsrv.model.rdf.RdfModelFactory;
 import org.apache.commons.rdf.api.RDF;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +37,7 @@ import edu.kit.scc.dem.wapsrv.repository.TransactionRepository;
  * @version 1.1
  */
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = {JenaRepository.class, WapServerConfig.class, JenaDataBase.class, JenaRdfBackend.class})
+@SpringBootTest(classes = {JenaRepository.class, WapServerConfig.class, JenaDataBase.class, JenaRdfBackend.class, RdfModelFactory.class})
 @ActiveProfiles("test")
 class JenaRepositoryTest {
    @Autowired
@@ -41,6 +48,8 @@ class JenaRepositoryTest {
    private JenaDataBase objBaseSource;
    @Autowired
    private RdfBackend objRdfBackend;
+   @Autowired
+   private ModelFactory objModelFactory;
 
    /**
     * Assert that JenaRepository instance is in transaction mode.
@@ -67,6 +76,7 @@ class JenaRepositoryTest {
       assertNotNull(objWapServerConfig);
       assertNotNull(objBaseSource);
       assertNotNull(objRdfBackend);
+      assertNotNull(objModelFactory);
    }
 
    /**
@@ -312,5 +322,17 @@ class JenaRepositoryTest {
       actual = null;
       actual = objJenaRepository.getTransactionDataset();
       assertNotNull(actual, "Could not get trasaction dataset.");
+   }
+
+   /**
+    * Test get annotations by anno properties (null if no matches)
+    * TODO: test is not very useful as long as test db does not contain any annos
+    */
+   @Test
+   final void testGetAnnotationsByWADMPropertyValues() {
+      HashMap<String, String> propMap = new HashMap<>();
+      propMap.put("target", "http://example.org/target1");
+      List<Annotation> annoList = objJenaRepository.getAnnotationsByWADMPropertyValues(propMap);
+      assertEquals(Collections.EMPTY_LIST, annoList);
    }
 }
