@@ -27,6 +27,7 @@ repositories {
 
 configurations {
    all*.exclude module : 'spring-boot-starter-logging'
+   all*.exclude module : 'logback-classic'
 }
 
 ext {
