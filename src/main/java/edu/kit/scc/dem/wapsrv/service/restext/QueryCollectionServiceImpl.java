@@ -26,6 +26,9 @@ public class QueryCollectionServiceImpl implements QueryCollectionService {
     @Autowired
     protected ModelFactory modelFactory;
 
+    @Autowired
+    protected AnnotationService annotationService;
+
 
     @Override
     public Page getPage(Map<String, String> propertyMap) throws InvalidRequestException {
@@ -40,8 +43,10 @@ public class QueryCollectionServiceImpl implements QueryCollectionService {
                 throw new InvalidRequestException(ErrorMessageRegistry.PAGE_WITH_PAGE_BUT_IRIS_MISSING);
             }
 
-             page[0] = modelFactory.createPage(retDs, "dynamicCollection", 0, false, true, undeletedAnnos.size(), Instant.now().toString(), "dynamic collection for query");
-            undeletedAnnos.forEach((anno -> page[0].addAnnotation(anno)));
+            page[0] = modelFactory.createPage(retDs, "dynamicCollection", 0, false, true, undeletedAnnos.size(), Instant.now().toString(), "dynamic collection for query");
+            undeletedAnnos.forEach((anno -> {
+                page[0].addAnnotation(annotationService.getAnnotation(anno.getIri().toString()));
+             }));
             page[0].closeAdding();
 
         });
