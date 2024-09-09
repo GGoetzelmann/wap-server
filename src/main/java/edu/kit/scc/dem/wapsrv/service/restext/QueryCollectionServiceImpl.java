@@ -45,7 +45,7 @@ public class QueryCollectionServiceImpl implements QueryCollectionService {
 
             page[0] = modelFactory.createPage(retDs, "dynamicCollection", 0, false, true, undeletedAnnos.size(), Instant.now().toString(), "dynamic collection for query");
             undeletedAnnos.forEach((anno -> {
-                page[0].addAnnotation(annotationService.getAnnotation(anno.getIri().toString()));
+                page[0].addAnnotation(annotationService.getAnnotation(anno.getIriString()));
              }));
             page[0].closeAdding();
 
