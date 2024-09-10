@@ -1,5 +1,6 @@
 package edu.kit.scc.dem.wapsrv.repository.util;
 
+import edu.kit.scc.dem.wapsrv.service.restext.QueryCollectionService;
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Model;
@@ -165,6 +166,20 @@ public class QueryBuilderTest {
 
         // Execute the query
         try (QueryExecution qexec = QueryExecutionFactory.create(appendedQuery2, DatasetFactory.wrap(testGraph))) {
+            ResultSet results = qexec.execSelect();
+            assertTrue(results.hasNext(), "query returned no results");
+            RDFNode resultGraphName = results.nextSolution().get("g"); //one named graph, one matching graph
+            assertEquals(graphURIString, resultGraphName.toString());
+        }
+    }
+
+    @Test
+    public void testAppendContainsTarget() {
+        Query query = QueryBuilder.buildBasicQuery();
+        Query appendedQuery = QueryBuilder.appendQueryForPropertyValue(query, "target", "http://example.org/", QueryCollectionService.MatchType.CONTAINS);
+
+        // Execute the query
+        try (QueryExecution qexec = QueryExecutionFactory.create(appendedQuery, DatasetFactory.wrap(testGraph))) {
             ResultSet results = qexec.execSelect();
             assertTrue(results.hasNext(), "query returned no results");
             RDFNode resultGraphName = results.nextSolution().get("g"); //one named graph, one matching graph

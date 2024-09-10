@@ -3,13 +3,13 @@ package edu.kit.scc.dem.wapsrv.service.restext;
 import edu.kit.scc.dem.wapsrv.app.ErrorMessageRegistry;
 import edu.kit.scc.dem.wapsrv.exceptions.InvalidRequestException;
 import edu.kit.scc.dem.wapsrv.model.Annotation;
-import edu.kit.scc.dem.wapsrv.model.AnnotationList;
 import edu.kit.scc.dem.wapsrv.model.ModelFactory;
 import edu.kit.scc.dem.wapsrv.model.Page;
 import edu.kit.scc.dem.wapsrv.repository.AnnotationRepository;
 import edu.kit.scc.dem.wapsrv.service.AnnotationService;
 import org.apache.commons.rdf.api.Dataset;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -31,7 +31,7 @@ public class QueryCollectionServiceImpl implements QueryCollectionService {
 
 
     @Override
-    public Page getPage(Map<String, String> propertyMap) throws InvalidRequestException {
+    public Page getPage(Map<String, Pair<String, MatchType>> propertyMap) throws InvalidRequestException {
         Dataset retDs = repository.getRdf().createDataset();
 
         Page[] page = new Page[1];

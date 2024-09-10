@@ -10,6 +10,7 @@ import javax.annotation.PostConstruct;
 import edu.kit.scc.dem.wapsrv.model.Annotation;
 import edu.kit.scc.dem.wapsrv.model.ModelFactory;
 import edu.kit.scc.dem.wapsrv.repository.util.QueryBuilder;
+import edu.kit.scc.dem.wapsrv.service.restext.QueryCollectionService;
 import org.apache.commons.rdf.api.RDF;
 import org.apache.jena.commonsrdf.JenaCommonsRDF;
 import org.apache.jena.commonsrdf.JenaRDF;
@@ -19,6 +20,7 @@ import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.tdb2.DatabaseMgr;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Repository;
 import edu.kit.scc.dem.wapsrv.app.WapServerConfig;
 import edu.kit.scc.dem.wapsrv.exceptions.NotExistentException;
@@ -30,7 +32,6 @@ import edu.kit.scc.dem.wapsrv.repository.TransactionRepository;
 
 import java.util.Map;
 import java.util.Optional;
-import org.apache.jena.sparql.core.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -265,16 +266,16 @@ public class JenaRepository2 extends CollectedRepository{
   }
 
   @Override
-  public List<Annotation> getAnnotationsByWADMPropertyValues(Map<String, String> propertyValues) {
+  public List<Annotation> getAnnotationsByWADMPropertyValues(Map<String, Pair<String, QueryCollectionService.MatchType>> propertyValues) {
     Query query = QueryBuilder.buildBasicQuery();
-    for (Map.Entry<String, String> pair : propertyValues.entrySet()) {
-      QueryBuilder.appendQueryForPropertyValue(query, pair.getKey(), pair.getValue());
+    for (Map.Entry<String, Pair<String, QueryCollectionService.MatchType>> propPair : propertyValues.entrySet()) {
+      QueryBuilder.appendQueryForPropertyValue(query, propPair.getKey(), propPair.getValue().getFirst(), propPair.getValue().getSecond());
     }
     ResultSet results = executeQuery(query);
 
     List<Annotation> annos = new ArrayList<>();
 
-    if (!results.hasNext()) return null;
+    if (!results.hasNext()) return annos;
 
     while (results.hasNext()) {
       QuerySolution soln = results.next();

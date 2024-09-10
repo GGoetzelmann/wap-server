@@ -1,7 +1,9 @@
 package edu.kit.scc.dem.wapsrv.repository;
 
 import edu.kit.scc.dem.wapsrv.model.Annotation;
+import edu.kit.scc.dem.wapsrv.service.restext.QueryCollectionService;
 import org.apache.jena.query.Dataset;
+import org.springframework.data.util.Pair;
 
 import java.util.List;
 import java.util.Map;
@@ -32,5 +34,5 @@ public interface AnnotationRepository extends WapObjectRepository {
     * @param PropertyValues Map of properties and their matching values.
     * @return Dataset of all matching annotations
     */
-   List<Annotation> getAnnotationsByWADMPropertyValues(Map<String, String> PropertyValues);
+   List<Annotation> getAnnotationsByWADMPropertyValues(Map<String, Pair<String, QueryCollectionService.MatchType>> PropertyValues);
 }

@@ -16,15 +16,17 @@ import edu.kit.scc.dem.wapsrv.model.formats.Formatter;
 import edu.kit.scc.dem.wapsrv.model.formats.JsonLdProfileRegistry;
 import edu.kit.scc.dem.wapsrv.service.restext.QueryCollectionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.lang.reflect.Method;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Extension of WAP Server with additional request options not directly aligned with the Web Annotation Protocol
@@ -63,31 +65,65 @@ public class DynamicCollectionController {
                                                    @RequestParam(value = "selector", required = false) String selectorParam,
                                                    @RequestParam(value = "creator", required = false) String creatorParam,
                                                    @RequestParam(value = "body", required = false) String bodyParam,
+                                                   @RequestParam(value = "targetContains", required = false) String targetContainsParam,
+                                                   @RequestParam(value = "selectorContains", required = false) String selectorContainsParam,
                                                    @RequestHeader HttpHeaders headers)
             throws WapException {
-        Map<String, String> propMap = new HashMap<>();
-        if(targetParam != null) {
-            String target = URLDecoder.decode(targetParam, StandardCharsets.UTF_8);
-            propMap.put("target", target);
+        Map<String, Pair<String, QueryCollectionService.MatchType>> propMap = new HashMap<>();
+
+        if ((targetParam != null && targetContainsParam != null) || (selectorParam != null && selectorContainsParam != null)) {
+            return ResponseEntity.badRequest().body("exact match parameter and contains parameter of same type are not allowed together");
         }
-        if (selectorParam != null) {
-            String selector = URLDecoder.decode(selectorParam, StandardCharsets.UTF_8);
-            propMap.put("selector", selector);
+
+        if(targetParam != null || targetContainsParam != null) {
+            String target = targetParam != null
+                   ? URLDecoder.decode(targetParam, StandardCharsets.UTF_8)
+                   : URLDecoder.decode(targetContainsParam, StandardCharsets.UTF_8);
+            QueryCollectionService.MatchType matchType = targetParam != null
+                   ? QueryCollectionService.MatchType.EXACT
+                   : QueryCollectionService.MatchType.CONTAINS;
+            propMap.put("target", Pair.of(target, matchType));
+        }
+        if (selectorParam != null || selectorContainsParam != null) {
+            String selector = selectorParam != null
+                    ? URLDecoder.decode(selectorParam, StandardCharsets.UTF_8)
+                    : URLDecoder.decode(selectorContainsParam, StandardCharsets.UTF_8);
+            QueryCollectionService.MatchType matchType = selectorParam != null
+                    ? QueryCollectionService.MatchType.EXACT
+                    : QueryCollectionService.MatchType.CONTAINS;
+            propMap.put("selector", Pair.of(selector, matchType));
         }
         if (creatorParam != null) {
             String creator = URLDecoder.decode(creatorParam, StandardCharsets.UTF_8);
-            propMap.put("creator", creator);
+            propMap.put("creator", Pair.of(creator, QueryCollectionService.MatchType.EXACT));
         }
         if (bodyParam != null) {
             String body = URLDecoder.decode(bodyParam, StandardCharsets.UTF_8);
-            propMap.put("body", body);
+            propMap.put("body", Pair.of(body, QueryCollectionService.MatchType.EXACT));
         }
-
 
         if (!propMap.isEmpty()) {
             return getAnnoCollectionByPropMap(propMap, headers);
         }
-        return new ResponseEntity<>("At least one parameter must be provided to create a collection", HttpStatus.BAD_REQUEST);
+
+        //if we have not returned by this point, we were not able to process any request parameters. Return error
+        Method method;
+        try {
+            method = this.getClass().getMethod("getCollectionByParams", String.class, String.class, String.class, String.class, String.class, String.class, HttpHeaders.class);
+        } catch (NoSuchMethodException e) {
+            return ResponseEntity.status(500).body("Internal Server Error");
+        }
+
+        List<String> parameterNames = Arrays.stream(method.getParameters())
+                .map(param -> {
+                    RequestParam requestParam = param.getAnnotation(RequestParam.class);
+                    return requestParam != null ? requestParam.value() : null;
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        String allowedParams = String.join(", ", parameterNames);
+        return ResponseEntity.badRequest().body("At least one parameter must be provided to create a collection. Allowed parameters are: " + allowedParams);
 
     }
 
@@ -108,7 +144,7 @@ public class DynamicCollectionController {
     }
      */
 
-    private ResponseEntity<?> getAnnoCollectionByPropMap(Map<String, String> propMap, HttpHeaders headers) {
+    private ResponseEntity<?> getAnnoCollectionByPropMap(Map<String, Pair<String, QueryCollectionService.MatchType>> propMap, HttpHeaders headers) {
 
         Page page = collectionService.getPage(propMap);
 
