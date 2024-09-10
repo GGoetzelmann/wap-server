@@ -10,6 +10,7 @@ import java.util.List;
 import edu.kit.scc.dem.wapsrv.model.Annotation;
 import edu.kit.scc.dem.wapsrv.model.ModelFactory;
 import edu.kit.scc.dem.wapsrv.model.rdf.RdfModelFactory;
+import edu.kit.scc.dem.wapsrv.service.restext.QueryCollectionService;
 import org.apache.commons.rdf.api.RDF;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.util.Pair;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import edu.kit.scc.dem.wapsrv.app.WapServerConfig;
@@ -330,8 +332,8 @@ class JenaRepositoryTest {
     */
    @Test
    final void testGetAnnotationsByWADMPropertyValues() {
-      HashMap<String, String> propMap = new HashMap<>();
-      propMap.put("target", "http://example.org/target1");
+      HashMap<String, Pair<String, QueryCollectionService.MatchType>> propMap = new HashMap<>();
+      propMap.put("target", Pair.of("http://example.org/target1", QueryCollectionService.MatchType.EXACT));
       List<Annotation> annoList = objJenaRepository.getAnnotationsByWADMPropertyValues(propMap);
       assertEquals(Collections.EMPTY_LIST, annoList);
    }
