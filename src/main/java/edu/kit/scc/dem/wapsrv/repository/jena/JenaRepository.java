@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import edu.kit.scc.dem.wapsrv.model.Annotation;
 import edu.kit.scc.dem.wapsrv.model.ModelFactory;

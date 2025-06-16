@@ -2,12 +2,6 @@ package edu.kit.scc.dem.wapsrv.testscommon;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import io.specto.hoverfly.junit5.HoverflyExtension;
-import io.specto.hoverfly.junit5.api.HoverflySimulate;
 import java.util.*;
 
 import org.apache.commons.rdf.api.*;
@@ -38,6 +32,8 @@ import edu.kit.scc.dem.wapsrv.repository.jena.JenaRdfBackend;
 import org.apache.jena.sparql.core.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.specto.hoverfly.junit5.HoverflyExtension;
+import io.specto.hoverfly.junit5.api.HoverflySimulate;
 
 /**
  * ApacheCommonsRdfTests
